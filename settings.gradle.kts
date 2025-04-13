@@ -12,7 +12,7 @@ pluginManagement {
     }
 }
 
-rootProject.name = "ConnectorCompatChecker"
+rootProject.name = "Probe"
 
 include("core")
 include("discord")
