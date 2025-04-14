@@ -19,14 +19,18 @@ public class ProbeRuntimeEnvironment implements AdapterRuntimeEnvironment {
     private static final VersionOverrides VERSION_OVERRIDES = new VersionOverrides();
     private static final DependencyOverrides DEPENDENCY_OVERRIDES = new DependencyOverrides(Path.of("nonexistent"));
 
+    private final Path outputDir;
     private final Path auditLogPath;
     private final Path cleanPath;
     private final Path generatedJarPath;
+    private final String mappedSuffix;
 
-    public ProbeRuntimeEnvironment(Path auditLogPath, Path cleanPath, Path generatedJarPath) {
+    public ProbeRuntimeEnvironment(Path outputDir, Path auditLogPath, Path cleanPath, Path generatedJarPath, String gameVersion) {
+        this.outputDir = outputDir;
         this.auditLogPath = auditLogPath;
         this.cleanPath = cleanPath;
         this.generatedJarPath = generatedJarPath;
+        this.mappedSuffix = "_mapped_moj_" + gameVersion;
     }
 
     @Override
@@ -42,6 +46,11 @@ public class ProbeRuntimeEnvironment implements AdapterRuntimeEnvironment {
     @Override
     public ClassLookup getCleanClassLookup() {
         return new SimpleClassLookup(ClassProvider.fromPaths(this.cleanPath));
+    }
+
+    @Override
+    public Path createCachedJarPath(String name) {
+        return this.outputDir.resolve(name + this.mappedSuffix + ".jar");
     }
 
     @Override

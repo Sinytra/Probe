@@ -22,9 +22,7 @@ import org.sinytra.adapter.patch.api.PatchAuditTrail;
 import org.slf4j.Logger;
 import org.slf4j.Marker;
 import org.slf4j.MarkerFactory;
-import org.spongepowered.asm.launch.MixinLaunchPluginLegacy;
 import org.spongepowered.asm.mixin.transformer.ClassInfo;
-import org.spongepowered.asm.service.MixinService;
 
 import java.io.*;
 import java.lang.invoke.MethodHandles;
@@ -51,8 +49,6 @@ public final class JarTransformer {
     private static final String LOOM_REMAP_ATTRIBUTE = "Fabric-Loom-Remap";
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    private static final VarHandle TRANSFORMER_LOADER_FIELD = uncheck(() -> MethodHandles.privateLookupIn(MixinLaunchPluginLegacy.class, MethodHandles.lookup()).findVarHandle(MixinLaunchPluginLegacy.class, "transformerLoader", ILaunchPluginService.ITransformerLoader.class));
-    
     private final AdapterRuntimeEnvironment environment;
 
     public JarTransformer(AdapterRuntimeEnvironment environment) {
@@ -81,7 +77,10 @@ public final class JarTransformer {
         return transformed;
     }
 
-    public TransformableJar cacheTransformableJar(File input, Path output) throws IOException {
+    public TransformableJar cacheTransformableJar(File input) throws IOException {
+        String name = input.getName().split("\\.(?!.*\\.)")[0];
+        Path output = this.environment.createCachedJarPath(name);
+
         FabricModFileMetadata metadata = readModMetadata(input);
         FabricModPath path = new FabricModPath(output, metadata);
         ConnectorUtil.CacheFile cacheFile = ConnectorUtil.getCached(input.toPath(), output);

@@ -14,6 +14,7 @@ public interface AdapterRuntimeEnvironment {
     Path getAuditReportPath();
     Path getGeneratedJarPath();
     ClassLookup getCleanClassLookup();
+    Path createCachedJarPath(String name);
     
     EnvType getEnvType();
 
