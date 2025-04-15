@@ -28,7 +28,10 @@ const val MR_API_HOST: String = "api.modrinth.com"
 const val API_V3: String = "v3"
 const val REQUIRED_DEP: String = "required"
 const val FAPI_ID: String = "P7dR8mSH"
+const val FFAPI_ID: String = "Aqlf1Shp"
 const val LOADER_NEOFORGE = "neoforge"
+
+// TODO Api response cache
 
 @Serializable
 data class ModrinthProject(val id: String, val name: String)
@@ -136,9 +139,9 @@ object ModrinthService {
             .flatMapMerge(concurrency = 8) { dep ->
                 flow {
                     // Try getting neoforge dep version first
-                    val depVersion = getProjectVersion(dep.projectId, gameVersion, LOADER_NEOFORGE)
+                    val depVersion = getProjectVersion(dep.projectId, gameVersion, loader)
                         // Fallback to fabric version
-                        ?: getProjectVersion(dep.projectId, gameVersion, loader)
+                        ?: (if (loader != LOADER_NEOFORGE) getProjectVersion(dep.projectId, gameVersion, loader) else null)
                         ?: throw RuntimeException("Failed to get version for dependency")
                     emitAll(downloadVersionDependenciesFlow(depVersion, gameVersion, loader, visited))
                     emit(resolveVersion(depVersion))

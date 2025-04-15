@@ -5,6 +5,7 @@ import com.google.common.collect.Multimap;
 import org.sinytra.adapter.game.jar.JarInspector;
 import org.sinytra.adapter.game.jar.JarTransformer;
 import org.sinytra.adapter.game.util.ConnectorFabricModMetadata;
+import org.sinytra.probe.game.discovery.ProbeModDiscoverer;
 import org.spongepowered.asm.launch.MixinBootstrap;
 
 import java.nio.file.Files;
@@ -30,7 +31,6 @@ public class ProbeTransformer {
 
         // This crashes now because we can't filter out NeoForge mods yet
         // TODO Dont transform neoforge mods
-        // TODO Include FFAPI, FFLoader
         Path auditLogPath = outputDir.resolve("audit_log.txt");
         Path generatedJarPath = outputDir.resolve("generated.jar");
 
@@ -51,8 +51,10 @@ public class ProbeTransformer {
             });
         List<JarTransformer.TransformableJar> allJars = Stream.concat(discoveredJars.stream(), discoveredNestedJars).toList();
 
+        List<Path> resolvedClassPath = ProbeModDiscoverer.resolveClassPath(classPath);
+
         // Run transformation
-        List<JarTransformer.TransformedFabricModPath> results = transformer.transform(allJars, classPath);
+        List<JarTransformer.TransformedFabricModPath> results = transformer.transform(allJars, resolvedClassPath);
         JarTransformer.TransformedFabricModPath result = results.getFirst();
 
         return result.auditTrail() == null || !result.auditTrail().hasFailingMixins();
