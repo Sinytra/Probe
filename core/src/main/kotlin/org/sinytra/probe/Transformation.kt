@@ -5,7 +5,6 @@ import org.sinytra.probe.game.ProbeTransformer
 import org.sinytra.probe.model.ProjectPlatform
 import org.sinytra.probe.service.*
 import java.nio.file.Path
-import kotlin.io.path.Path
 
 @Serializable
 data class TransformationResult(
@@ -14,22 +13,17 @@ data class TransformationResult(
     val success: Boolean
 )
 
-class TransformationService(private val platforms: GlobalPlatformService) {
+class TransformationService(private val platforms: GlobalPlatformService, private val gameFiles: GameFiles) {
 
-    suspend fun runTransformation(project: ResolvedProject, gameVersion: String): TransformationResult? {
+    suspend fun runTransformation(project: ResolvedProject, gameVersion: String): TransformationResult {
         val mainFile = project.version
         val otherFiles = project.flattenDependencies()
 
         val allFiles = (listOf(mainFile) + otherFiles).map(ProjectVersion::getFilePath)
 
-        val cleanPath = Path(System.getProperty("org.sinytra.probe.clean.path")!!)
-        val classPath = System.getProperty("org.sinytra.probe.transform.classpath")!!.split(";")
-            .map(::Path)
-            .toMutableList()
+        val classPath = gameFiles.loaderFiles.toMutableList() + resolveMandatedLibraries(gameVersion)
 
-        classPath.addAll(resolveMandatedLibraries(gameVersion))
-
-        val result = ProbeTransformer().transform(allFiles, project.version.getFilePath(), cleanPath, classPath, gameVersion)
+        val result = ProbeTransformer().transform(allFiles, project.version.getFilePath(), gameFiles.cleanFile, classPath, gameVersion)
         // TODO Save result
 
         return TransformationResult(project.version.projectId, otherFiles.map(ProjectVersion::projectId), result)

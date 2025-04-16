@@ -9,8 +9,11 @@ import org.sinytra.probe.model.PostgresProjectRepository
 import org.sinytra.probe.model.ProjectPlatform
 import org.sinytra.probe.service.GlobalPlatformService
 import org.sinytra.probe.service.ModrinthService
+import org.sinytra.probe.service.SetupService
 import java.nio.file.Path
 import kotlin.io.path.Path
+import kotlin.io.path.createDirectories
+import kotlin.io.path.div
 
 fun main(args: Array<String>) {
     io.ktor.server.netty.EngineMain.main(args)
@@ -22,6 +25,12 @@ fun getBaseStoragePath(): Path = baseStoragePathInternal ?: throw IllegalStateEx
 fun Application.module() {
     baseStoragePathInternal = environment.config.property("probe.storageBasePath").getString().let(::Path)
 
+    val setupDir = getBaseStoragePath() / ".setup"
+    setupDir.createDirectories()
+    val setup = SetupService(setupDir)
+
+    val gameFiles = setup.installLoader()
+
     val modRepository = PostgresModRepository()
     val projectRepository = PostgresProjectRepository()
 
@@ -29,9 +38,11 @@ fun Application.module() {
     val modrinth = ModrinthService(redis)
     val platforms = GlobalPlatformService(mapOf(ProjectPlatform.MODRINTH to modrinth))
 
+    val transformation = TransformationService(platforms, gameFiles)
+
     configureSerialization()
     configureDatabases()
-    configureRouting(platforms)
+    configureRouting(platforms, transformation)
 
     transaction {
         SchemaUtils.create(ModTable)

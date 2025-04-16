@@ -13,9 +13,7 @@ import org.sinytra.probe.service.GlobalPlatformService
 @Serializable
 data class TestRequestBody(val platform: ProjectPlatform, val id: String)
 
-fun Application.configureRouting(platforms: GlobalPlatformService) {
-    val transformation = TransformationService(platforms)
-    
+fun Application.configureRouting(platforms: GlobalPlatformService, transformation: TransformationService) {
     routing {
         get("/") {
             call.respondText("Hello World!")

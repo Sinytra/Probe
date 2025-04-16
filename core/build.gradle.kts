@@ -24,17 +24,6 @@ repositories {
     mavenCentral()
 }
 
-evaluationDependsOn(":game")
-afterEvaluate {
-    val args = application.applicationDefaultJvmArgs as MutableList<String>
-    
-    val cleanPath = project(":game").ext["cleanPath"]!!
-    args += "-Dorg.sinytra.probe.clean.path=$cleanPath"
-
-    val classPath = project(":game").ext["transformClassPath"]!!
-    args += "-Dorg.sinytra.probe.transform.classpath=$classPath"
-}
-
 dependencies {
     implementation(project(":transform", configuration = "localDev"))
 
