@@ -13,6 +13,8 @@ fart-version = "1.0.12"
 forgified-fabric-loader-version = "2.5.34+0.16.0+1.21.1"
 access-widener-version = "2.1.0"
 shadow-version = "9.0.0-beta12"
+lettuce-version = "6.5.0.RELEASE"
+kotlinx-coroutines-version = "1.10.2"
 
 [libraries]
 ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor-version" }
@@ -20,6 +22,7 @@ ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx
 ktor-server-content-negotiation = { module = "io.ktor:ktor-server-content-negotiation", version.ref = "ktor-version" }
 postgresql = { module = "org.postgresql:postgresql", version.ref = "postgres-version" }
 h2 = { module = "com.h2database:h2", version.ref = "h2-version" }
+lettuce = { module = "io.lettuce:lettuce-core", version.ref = "lettuce-version" }
 ktor-server-netty = { module = "io.ktor:ktor-server-netty", version.ref = "ktor-version" }
 logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback-version" }
 ktor-server-test-host = { module = "io.ktor:ktor-server-test-host", version.ref = "ktor-version" }
@@ -37,6 +40,7 @@ adapter-data = { module = "org.sinytra.adapter:adapter", version.ref = "adapter-
 fart = { module = "org.sinytra:ForgeAutoRenamingTool", version.ref = "fart-version" }
 forgified-fabric-loader = { module = "org.sinytra:forgified-fabric-loader", version.ref = "forgified-fabric-loader-version" }
 access-widener = { module = "net.fabricmc:access-widener", version.ref = "access-widener-version" }
+kotlinx-coroutines-reactive = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-reactive", version.ref = "kotlinx-coroutines-version" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin-version" }

@@ -38,11 +38,13 @@ afterEvaluate {
 dependencies {
     implementation(project(":transform", configuration = "localDev"))
 
+    implementation(libs.kotlinx.coroutines.reactive)
     implementation(libs.ktor.server.core)
     implementation(libs.ktor.serialization.kotlinx.json)
     implementation(libs.ktor.server.content.negotiation)
     implementation(libs.postgresql)
     implementation(libs.h2)
+    implementation(libs.lettuce)
     implementation(libs.ktor.server.netty)
     implementation(libs.logback.classic)
     implementation(libs.exposed.core)

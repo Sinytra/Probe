@@ -2,14 +2,17 @@ package org.sinytra.probe.game;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
+import cpw.mods.jarhandling.SecureJar;
 import org.sinytra.adapter.game.jar.JarInspector;
 import org.sinytra.adapter.game.jar.JarTransformer;
 import org.sinytra.adapter.game.util.ConnectorFabricModMetadata;
+import org.sinytra.adapter.game.util.ConnectorUtil;
 import org.sinytra.probe.game.discovery.ProbeModDiscoverer;
 import org.spongepowered.asm.launch.MixinBootstrap;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -17,6 +20,8 @@ import static cpw.mods.modlauncher.api.LambdaExceptionUtils.rethrowFunction;
 
 public class ProbeTransformer {
     private static boolean initialized;
+
+    public record ModPathTuple(List<Path> fabric, List<Path> other) {}
 
     public boolean transform(List<Path> sources, Path primarySource, Path cleanPath, List<Path> classPath, String gameVersion) throws Throwable {
         if (!initialized) {
@@ -29,8 +34,6 @@ public class ProbeTransformer {
         Path tempDir = outputDir.resolve("temp");
         Files.createDirectories(tempDir);
 
-        // This crashes now because we can't filter out NeoForge mods yet
-        // TODO Dont transform neoforge mods
         Path auditLogPath = outputDir.resolve("audit_log.txt");
         Path generatedJarPath = outputDir.resolve("generated.jar");
 
@@ -38,7 +41,9 @@ public class ProbeTransformer {
         JarTransformer transformer = new JarTransformer(environment);
         JarInspector inspector = new JarInspector(transformer, tempDir);
 
-        List<JarTransformer.TransformableJar> discoveredJars = sources.stream()
+        ModPathTuple jars = filterFabricJars(sources);
+
+        List<JarTransformer.TransformableJar> discoveredJars = jars.fabric().stream()
             .map(rethrowFunction(src -> transformer.cacheTransformableJar(src.toFile())))
             .toList();
 
@@ -51,12 +56,29 @@ public class ProbeTransformer {
             });
         List<JarTransformer.TransformableJar> allJars = Stream.concat(discoveredJars.stream(), discoveredNestedJars).toList();
 
-        List<Path> resolvedClassPath = ProbeModDiscoverer.resolveClassPath(classPath);
+        List<Path> resolvedClassPath = new ArrayList<>(ProbeModDiscoverer.resolveClassPath(classPath));
+        resolvedClassPath.addAll(jars.other());
 
         // Run transformation
         List<JarTransformer.TransformedFabricModPath> results = transformer.transform(allJars, resolvedClassPath);
         JarTransformer.TransformedFabricModPath result = results.getFirst();
 
         return result.auditTrail() == null || !result.auditTrail().hasFailingMixins();
+    }
+
+    public ModPathTuple filterFabricJars(List<Path> paths) {
+        List<Path> fabricJars = new ArrayList<>();
+        List<Path> otherJars = new ArrayList<>();
+
+        for (Path path : paths) {
+            SecureJar jar = SecureJar.from(path);
+            if (Files.exists(jar.getPath(ConnectorUtil.FABRIC_MOD_JSON))) {
+                fabricJars.add(path);
+            } else {
+                otherJars.add(path);
+            }
+        }
+
+        return new ModPathTuple(fabricJars, otherJars);
     }
 }
