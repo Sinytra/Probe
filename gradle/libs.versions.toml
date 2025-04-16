@@ -2,7 +2,6 @@
 h2-version = "2.3.232"
 kotlin-version = "2.1.20"
 ktor-version = "3.1.2"
-logback-version = "1.4.14"
 postgres-version = "42.7.5"
 exposed-version = "0.56.0"
 moddev-version = "2.0.78"
@@ -15,6 +14,7 @@ access-widener-version = "2.1.0"
 shadow-version = "9.0.0-beta12"
 lettuce-version = "6.5.0.RELEASE"
 kotlinx-coroutines-version = "1.10.2"
+log4j-version = "2.24.3"
 
 [libraries]
 ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor-version" }
@@ -24,7 +24,9 @@ postgresql = { module = "org.postgresql:postgresql", version.ref = "postgres-ver
 h2 = { module = "com.h2database:h2", version.ref = "h2-version" }
 lettuce = { module = "io.lettuce:lettuce-core", version.ref = "lettuce-version" }
 ktor-server-netty = { module = "io.ktor:ktor-server-netty", version.ref = "ktor-version" }
-logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback-version" }
+log4j-bom = { module = "org.apache.logging.log4j:log4j-bom", version.ref = "log4j-version" }
+log4j-core = { module = "org.apache.logging.log4j:log4j-core" }
+log4j-slf4j = { module = "org.apache.logging.log4j:log4j-slf4j2-impl" }
 ktor-server-test-host = { module = "io.ktor:ktor-server-test-host", version.ref = "ktor-version" }
 kotlin-test-junit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin-version" }
 exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "exposed-version" }
