@@ -12,43 +12,48 @@ import kotlin.io.path.createDirectories
 import kotlin.io.path.div
 import kotlin.io.path.exists
 
-const val NFRT_URL = "https://maven.neoforged.net/releases/net/neoforged/neoform-runtime/1.0.21/neoform-runtime-1.0.21-all.jar"
-const val NEO_VERSION = "net.neoforged:neoforge:21.1.148:userdev"
-const val NEO_UNIVERSAL_URL = "https://maven.neoforged.net/releases/net/neoforged/neoforge/21.1.148/neoforge-21.1.148-universal.jar"
-
 data class GameFiles(val cleanFile: Path, val loaderFiles: List<Path>)
 
-class SetupService(private val baseDir: Path) {
+class SetupService(private val baseDir: Path, private val useLocalCache: Boolean, private val nfrtVersion: String, private val neoForgeVersion: String) {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(SetupService::class.java)
     }
 
     fun installLoader(): GameFiles {
-        val installDir = baseDir / "install"
-        installDir.createDirectories()
+        val outputDir = baseDir / "output"
+        outputDir.createDirectories()
 
-        val cleanArtifact = installDir / "clean.jar"
-        val compiledArtifact = installDir / "compiled.jar"
+        val cleanArtifact = outputDir / "clean.jar"
+        val compiledArtifact = outputDir / "compiled.jar"
         
         val neoUniversal = baseDir / "neo-universal.jar"
-        downloadFile(NEO_UNIVERSAL_URL, neoUniversal)
-
-        if (cleanArtifact.exists() && compiledArtifact.exists()) {
-            return GameFiles(cleanArtifact, listOf(neoUniversal, compiledArtifact))
-        }
+        val neoUniversalUrl = getMavenUrl("net.neoforged", "neoforge", neoForgeVersion, "universal")
+        downloadFile(neoUniversalUrl, neoUniversal)
 
         val runtime = baseDir / "runtime.jar"
-        downloadFile(NFRT_URL, runtime)
+        val nfrtUrl = getMavenUrl("net.neoforged", "neoform-runtime", nfrtVersion, "all")
+        downloadFile(nfrtUrl, runtime)
+        
+        val workDir = baseDir / ".temp"
+        workDir.createDirectories()
 
-        val args = listOf(
+        val neoMavenCoords = "net.neoforged:neoforge:$neoForgeVersion:userdev"
+        val args = mutableListOf(
             "java", "-jar", runtime.absolutePathString(),
-            "run", "--neoforge", NEO_VERSION, "--dist", "joined",
+            "run", "--neoforge", neoMavenCoords, "--dist", "joined",
             "--write-result=compiled:${compiledArtifact.fileName}",
-            "--write-result=vanillaDeobfuscated:${cleanArtifact.fileName}"
+            "--write-result=vanillaDeobfuscated:${cleanArtifact.fileName}",
+            "--work-dir", workDir.absolutePathString()
         )
 
+        if (useLocalCache) {
+            val localCachePath = baseDir / ".neoformruntime"
+            localCachePath.createDirectories()
+            args += listOf("--home-dir", localCachePath.absolutePathString())
+        }
+
         ProcessBuilder(args)
-            .directory(installDir.toFile())
+            .directory(outputDir.toFile())
             .redirectOutput(Redirect.INHERIT)
             .redirectError(Redirect.INHERIT)
             .start()
@@ -67,5 +72,9 @@ class SetupService(private val baseDir: Path) {
                 }
             }
         }
+    }
+    
+    private fun getMavenUrl(group: String, name: String, version: String, classifier: String? = null): String {
+        return "https://maven.neoforged.net/releases/${group.replace('.', '/')}/$name/$version/$name-$version${classifier?.let { "-$it" }}.jar"
     }
 }

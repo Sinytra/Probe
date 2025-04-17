@@ -23,11 +23,14 @@ var baseStoragePathInternal: Path? = null
 fun getBaseStoragePath(): Path = baseStoragePathInternal ?: throw IllegalStateException("Missing base storage path variable")
 
 fun Application.module() {
-    baseStoragePathInternal = environment.config.property("probe.storageBasePath").getString().let(::Path)
+    baseStoragePathInternal = environment.config.propertyOrNull("probe.storageBasePath")?.getString()?.let(::Path) ?: Path(".")
+    val useLocalCache = environment.config.propertyOrNull("probe.useLocalCache")?.getString() == "true"
+    val nfrtVersion = environment.config.property("probe.nfrtVersion").getString()
+    val neoForgeVersion = environment.config.property("probe.neoForgeVersion").getString()
 
     val setupDir = getBaseStoragePath() / ".setup"
     setupDir.createDirectories()
-    val setup = SetupService(setupDir)
+    val setup = SetupService(setupDir, useLocalCache, nfrtVersion, neoForgeVersion)
 
     val gameFiles = setup.installLoader()
 
