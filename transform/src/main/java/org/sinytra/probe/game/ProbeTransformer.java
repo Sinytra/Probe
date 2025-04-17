@@ -8,6 +8,8 @@ import org.sinytra.adapter.game.jar.JarTransformer;
 import org.sinytra.adapter.game.util.ConnectorFabricModMetadata;
 import org.sinytra.adapter.game.util.ConnectorUtil;
 import org.sinytra.probe.game.discovery.ProbeModDiscoverer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.spongepowered.asm.launch.MixinBootstrap;
 
 import java.nio.file.Files;
@@ -19,11 +21,16 @@ import java.util.stream.Stream;
 import static cpw.mods.modlauncher.api.LambdaExceptionUtils.rethrowFunction;
 
 public class ProbeTransformer {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ProbeTransformer.class);
     private static boolean initialized;
 
-    public record ModPathTuple(List<Path> fabric, List<Path> other) {}
+    public record ModPathTuple(List<Path> fabric, List<Path> other) {
+    }
 
-    public boolean transform(List<Path> sources, Path primarySource, Path cleanPath, List<Path> classPath, String gameVersion) throws Throwable {
+    public record TransformOutput(boolean success, String primaryModid) {
+    }
+
+    public TransformOutput transform(List<Path> sources, Path primarySource, Path cleanPath, List<Path> classPath, String gameVersion) throws Throwable {
         if (!initialized) {
             MixinBootstrap.init();
             initialized = true;
@@ -47,6 +54,12 @@ public class ProbeTransformer {
             .map(rethrowFunction(src -> transformer.cacheTransformableJar(src.toFile())))
             .toList();
 
+        JarTransformer.TransformableJar primaryJar = discoveredJars.stream()
+            .filter(j -> j.input().toPath().equals(primarySource))
+            .findFirst()
+            .orElseThrow();
+        String primaryModid = primaryJar.modPath().metadata().modMetadata().getId();
+
         // Prepare jars
         Multimap<JarTransformer.TransformableJar, JarTransformer.TransformableJar> parentToChildren = HashMultimap.create();
         Stream<JarTransformer.TransformableJar> discoveredNestedJars = discoveredJars.stream()
@@ -60,10 +73,16 @@ public class ProbeTransformer {
         resolvedClassPath.addAll(jars.other());
 
         // Run transformation
-        List<JarTransformer.TransformedFabricModPath> results = transformer.transform(allJars, resolvedClassPath);
-        JarTransformer.TransformedFabricModPath result = results.getFirst();
+        try {
+            List<JarTransformer.TransformedFabricModPath> results = transformer.transform(allJars, resolvedClassPath);
+            JarTransformer.TransformedFabricModPath result = results.getFirst();
 
-        return result.auditTrail() == null || !result.auditTrail().hasFailingMixins();
+            boolean success = result.auditTrail() == null || !result.auditTrail().hasFailingMixins();
+            return new TransformOutput(success, primaryModid);
+        } catch (Throwable t) {
+            LOGGER.error("Failed to transform sources", t);
+            return new TransformOutput(false, primaryModid);
+        }
     }
 
     public ModPathTuple filterFabricJars(List<Path> paths) {

@@ -25,5 +25,7 @@ class ProjectDAO(id: EntityID<Int>) : IntEntity(id) {
 
 fun daoToModel(dao: ProjectDAO) = Project(
     ProjectPlatform.valueOf(dao.platform),
-    dao.projectId
+    dao.projectId,
+    dao.mod.modid,
+    dao.id.value,
 )

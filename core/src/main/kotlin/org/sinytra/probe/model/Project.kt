@@ -10,5 +10,7 @@ enum class ProjectPlatform {
 @Serializable
 data class Project(
     val platform: ProjectPlatform,
-    val id: String
+    val id: String,
+    val modid: String,
+    val internalId: Int? = null
 )

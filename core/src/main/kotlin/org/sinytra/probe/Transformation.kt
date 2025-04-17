@@ -10,7 +10,8 @@ import java.nio.file.Path
 data class TransformationResult(
     val projectId: String,
     val dependencyProjectId: List<String>,
-    val success: Boolean
+    val success: Boolean,
+    val modid: String
 )
 
 class TransformationService(private val platforms: GlobalPlatformService, private val gameFiles: GameFiles) {
@@ -24,9 +25,13 @@ class TransformationService(private val platforms: GlobalPlatformService, privat
         val classPath = gameFiles.loaderFiles.toMutableList() + resolveMandatedLibraries(gameVersion)
 
         val result = ProbeTransformer().transform(allFiles, project.version.getFilePath(), gameFiles.cleanFile, classPath, gameVersion)
-        // TODO Save result
 
-        return TransformationResult(project.version.projectId, otherFiles.map(ProjectVersion::projectId), result)
+        return TransformationResult(
+            project.version.projectId,
+            otherFiles.map(ProjectVersion::projectId),
+            result.success(),
+            result.primaryModid()
+        )
     }
 
     private suspend fun resolveMandatedLibraries(gameVersion: String): List<Path> {

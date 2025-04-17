@@ -1,16 +1,16 @@
 package org.sinytra.probe.model
 
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.deleteWhere
 import org.sinytra.probe.db.ModDAO
 import org.sinytra.probe.db.ModTable
 import org.sinytra.probe.db.daoToModel
 import org.sinytra.probe.db.suspendTransaction
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.deleteWhere
 
 interface ModRepository {
     suspend fun allMods(): List<Mod>
     suspend fun modByModid(modid: String): Mod?
-    suspend fun addMod(mod: Mod)
+    suspend fun addMod(mod: Mod): Mod
     suspend fun removeMod(modid: String): Boolean
 }
 
@@ -27,10 +27,10 @@ class PostgresModRepository : ModRepository {
             .firstOrNull()
     }
 
-    override suspend fun addMod(mod: Mod): Unit = suspendTransaction {
+    override suspend fun addMod(mod: Mod): Mod = suspendTransaction {
         ModDAO.new {
             modid = mod.modid
-        }
+        }.let(::daoToModel)
     }
 
     override suspend fun removeMod(modid: String): Boolean = suspendTransaction {

@@ -7,7 +7,7 @@ import org.jetbrains.exposed.dao.id.IntIdTable
 import org.sinytra.probe.model.Mod
 
 object ModTable : IntIdTable("mod") {
-    val modid = varchar("modid", 255).nullable()
+    val modid = varchar("modid", 255).uniqueIndex()
 }
 
 class ModDAO(id: EntityID<Int>) : IntEntity(id) {
@@ -19,5 +19,6 @@ class ModDAO(id: EntityID<Int>) : IntEntity(id) {
 }
 
 fun daoToModel(dao: ModDAO) = Mod(
-    dao.modid
+    dao.modid,
+    dao.projects.map(::daoToModel)
 )

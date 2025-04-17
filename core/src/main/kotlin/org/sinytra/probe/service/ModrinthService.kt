@@ -38,7 +38,7 @@ const val LOADER_NEOFORGE = "neoforge"
 
 @Serializable
 private data class MRProject(
-    val id: String,
+    override val id: String,
     override val name: String
 ) : PlatformProject {
     override val platform: ProjectPlatform = ProjectPlatform.MODRINTH
@@ -109,10 +109,9 @@ class ModrinthService(
                 host = MR_API_HOST
             }
         }
-        expectSuccess = true
     }
 
-    override suspend fun getProject(slug: String): PlatformProject {
+    override suspend fun getProject(slug: String): PlatformProject? {
         val cmd = redis.coroutines()
         val key = "modrinth:$slug"
 
@@ -121,7 +120,11 @@ class ModrinthService(
             return cached
         }
 
-        val data = client.get(Projects.Id(id = slug)).body<MRProject>()
+        val data = client.get(Projects.Id(id = slug))
+            .takeIf { it.status.isSuccess() }
+            ?.body<MRProject>()
+            ?: return null
+
         cmd.set(key, Json.encodeToString(data))
         return data
     }
@@ -129,16 +132,16 @@ class ModrinthService(
     override suspend fun resolveProject(project: PlatformProject, gameVersion: String): ResolvedProject? {
         project as MRProject
 
-        return resolveProjectInternal(project.id, gameVersion)
+        return resolveProjectInternal(project.id, gameVersion, false)
     }
 
-    private suspend fun resolveProjectInternal(project: String, gameVersion: String): ResolvedProject? {
-        val ver = getOrComputeVersion(project, gameVersion, LOADER_FABRIC) ?: throw RuntimeException("Error resolving project $project")
+    private suspend fun resolveProjectInternal(project: String, gameVersion: String, fallbackLoader: Boolean): ResolvedProject? {
+        val ver = getOrComputeVersion(project, gameVersion, LOADER_FABRIC, fallbackLoader) ?: throw RuntimeException("Error resolving project $project")
 
         val deps: List<ResolvedProject> = channelFlow {
             ver.dependencies.forEach { dep ->
                 launch {
-                    send(resolveProjectInternal(dep, gameVersion) ?: throw RuntimeException("Failed to resolve dependent project $dep"))
+                    send(resolveProjectInternal(dep, gameVersion, true) ?: throw RuntimeException("Failed to resolve dependent project $dep"))
                 }
             }
         }.toList()
@@ -147,9 +150,9 @@ class ModrinthService(
     }
 
     override suspend fun resolveProjectVersion(slug: String, gameVersion: String, loader: String): ProjectVersion? =
-        getOrComputeVersion(slug, gameVersion, loader)
+        getOrComputeVersion(slug, gameVersion, loader, false)
 
-    private suspend fun getOrComputeVersion(project: String, gameVersion: String, loader: String): MRResolvedVersion? {
+    private suspend fun getOrComputeVersion(project: String, gameVersion: String, loader: String, fallbackLoader: Boolean): MRResolvedVersion? {
         val cmd = redis.coroutines()
         val key = "modrinth:$project:$gameVersion"
         val data = cmd.get(key)
@@ -157,8 +160,8 @@ class ModrinthService(
         if (data == null) {
             LOGGER.info("Fetching version for project $project")
 
-            val ver = computeProjectVersion(project, gameVersion, LOADER_NEOFORGE)
-                ?: (if (loader != LOADER_NEOFORGE) computeProjectVersion(project, gameVersion, loader) else null)
+            val ver = computeProjectVersion(project, gameVersion, if (fallbackLoader) LOADER_NEOFORGE else loader)
+                ?: (if (fallbackLoader && loader != LOADER_NEOFORGE) computeProjectVersion(project, gameVersion, loader) else null)
                 ?: return null
 
             val res = computeVersionFile(ver)
@@ -171,7 +174,7 @@ class ModrinthService(
         val path = parsed.getFilePath()
         if (!path.exists()) {
             cmd.del(key)
-            return getOrComputeVersion(project, gameVersion, loader)
+            return getOrComputeVersion(project, gameVersion, loader, fallbackLoader)
         }
         return parsed
     }

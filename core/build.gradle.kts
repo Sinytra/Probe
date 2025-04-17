@@ -8,6 +8,7 @@ group = "org.sinytra.probe"
 version = "0.0.1"
 
 val neoForgeVersion: String by rootProject
+val gameVersion: String by rootProject
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
@@ -19,6 +20,8 @@ application {
         "-Dio.ktor.development=$isDevelopment",
         "-Dorg.sinytra.probe.storage_path=${file("run").absolutePath}",
         "-Dorg.sinytra.probe.neo_version=$neoForgeVersion",
+        "-Dorg.sinytra.probe.game_version=$gameVersion",
+        "-Dorg.sinytra.probe.toolchain_version=0.0.1",
         "-Dorg.sinytra.probe.local_cache=true",
         "-Dorg.probe.logging.level=DEBUG",
         "--add-opens", "java.base/java.lang.invoke=ALL-UNNAMED"
@@ -54,6 +57,7 @@ dependencies {
     implementation(libs.exposed.core)
     implementation(libs.exposed.jdbc)
     implementation(libs.exposed.dao)
+    implementation(libs.exposed.datetime)
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.cio)
     implementation(libs.ktor.client.content.negotiation)

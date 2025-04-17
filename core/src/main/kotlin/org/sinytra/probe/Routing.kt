@@ -6,14 +6,19 @@ import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.Serializable
 import org.sinytra.probe.model.ProjectPlatform
+import org.sinytra.probe.model.TestResult
 import org.sinytra.probe.service.GlobalPlatformService
+import org.sinytra.probe.service.PersistenceService
 
 @Serializable
 data class TestRequestBody(val platform: ProjectPlatform, val id: String)
 
-fun Application.configureRouting(platforms: GlobalPlatformService, transformation: TransformationService) {
+fun Application.configureRouting(platforms: GlobalPlatformService, transformation: TransformationService,
+                                 gameVersion: String, toolchainVersion: String,
+                                 persistence: PersistenceService) {
     routing {
         get("/") {
             call.respondText("Hello World!")
@@ -25,14 +30,17 @@ fun Application.configureRouting(platforms: GlobalPlatformService, transformatio
                 if (body.platform != ProjectPlatform.MODRINTH) {
                     throw NotImplementedError("Unsupported platform ${body.platform}")
                 }
-                
+
                 val project = platforms.getProject(body.platform, body.id)
                     ?: return@post call.respond(HttpStatusCode.NotFound)
 
-                val resolved = platforms.resolveProject(project, "1.21.1")
+                val resolved = platforms.resolveProject(project, gameVersion)
                     ?: return@post call.respond(HttpStatusCode.NotFound)
 
-                val result = transformation.runTransformation(resolved, "1.21.1") ?: call.respond(HttpStatusCode.NotFound)
+                val result: TestResult = persistence.getExistingResult(project, gameVersion, toolchainVersion) ?: coroutineScope { 
+                    val transResult = transformation.runTransformation(resolved, gameVersion)
+                    persistence.saveResult(project, transResult, gameVersion, toolchainVersion)
+                }
 
                 call.respond(result)
             } catch (ex: IllegalStateException) {

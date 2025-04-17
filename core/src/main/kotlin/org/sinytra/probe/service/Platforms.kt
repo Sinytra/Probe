@@ -6,6 +6,7 @@ import java.nio.file.Path
 import kotlin.io.path.div
 
 interface PlatformProject {
+    val id: String
     val name: String
     val platform: ProjectPlatform
 }

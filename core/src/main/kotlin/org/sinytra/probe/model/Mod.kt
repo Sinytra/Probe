@@ -4,5 +4,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class Mod(
-    val modid: String?
+    val modid: String,
+    val projects: List<Project>
 )
