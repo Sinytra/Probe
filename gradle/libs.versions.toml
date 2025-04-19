@@ -4,10 +4,8 @@ kotlin-version = "2.1.20"
 ktor-version = "3.1.2"
 postgres-version = "42.7.5"
 exposed-version = "0.61.0"
-moddev-version = "2.0.78"
 adapter-data-version = "1.13.20+1.21.1-20240811.191740"
 adapter-definition-version = "1.13.25+1.21.1"
-adapter-userdev-version = "1.2.1-SNAPSHOT"
 fart-version = "1.0.12"
 forgified-fabric-loader-version = "2.5.34+0.16.0+1.21.1"
 access-widener-version = "2.1.0"
@@ -49,6 +47,4 @@ kotlinx-coroutines-reactive = { module = "org.jetbrains.kotlinx:kotlinx-coroutin
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin-version" }
 ktor = { id = "io.ktor.plugin", version.ref = "ktor-version" }
 kotlin-plugin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin-version" }
-moddev = { id = "net.neoforged.moddev", version.ref = "moddev-version" }
-adapter-userdev = { id = "org.sinytra.adapter.userdev", version.ref = "adapter-userdev-version" }
 shadow = { id = "com.gradleup.shadow", version.ref = "shadow-version" }

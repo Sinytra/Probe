@@ -30,13 +30,12 @@ public class ProbeTransformer {
     public record TransformOutput(boolean success, String primaryModid) {
     }
 
-    public TransformOutput transform(List<Path> sources, Path primarySource, Path cleanPath, List<Path> classPath, String gameVersion) throws Throwable {
+    public TransformOutput transform(List<Path> sources, Path outputDir, Path primarySource, Path cleanPath, List<Path> classPath, String gameVersion) throws Exception {
         if (!initialized) {
             MixinBootstrap.init();
             initialized = true;
         }
 
-        Path outputDir = primarySource.getParent().resolve(".output");
         Files.createDirectories(outputDir);
         Path tempDir = outputDir.resolve("temp");
         Files.createDirectories(tempDir);

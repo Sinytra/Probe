@@ -10,6 +10,11 @@ version = "0.0.1"
 val neoForgeVersion: String by rootProject
 val gameVersion: String by rootProject
 
+val transfomer: Configuration by configurations.creating {
+    attributes.attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling.SHADOWED))
+    isTransitive = false
+}
+
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
 application {
@@ -39,8 +44,12 @@ repositories {
     mavenCentral()
 }
 
+afterEvaluate {
+    (application.applicationDefaultJvmArgs as MutableList<String>) += listOf("-Dorg.sinytra.transformer.path=${transfomer.singleFile.absolutePath}")
+}
+
 dependencies {
-    implementation(project(":transform", configuration = "localDev"))
+    transfomer(project(":transform"))
 
     implementation(platform(libs.log4j.bom))
     implementation(libs.log4j.core)
@@ -65,4 +74,8 @@ dependencies {
     implementation(libs.ktor.client.resources)
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.kotlin.test.junit)
+}
+
+tasks.getByName("run") {
+    dependsOn(transfomer)
 }

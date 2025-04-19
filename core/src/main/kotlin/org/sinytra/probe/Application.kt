@@ -48,7 +48,7 @@ fun Application.module() {
     val modrinth = ModrinthService(redis)
     val platforms = GlobalPlatformService(mapOf(ProjectPlatform.MODRINTH to modrinth))
 
-    val transformation = TransformationService(platforms, gameFiles)
+    val transformation = TransformationService(platforms, gameFiles, setup)
     val persistence = PersistenceService(modRepository, projectRepository, testResultsRepository)
 
     configureSerialization()

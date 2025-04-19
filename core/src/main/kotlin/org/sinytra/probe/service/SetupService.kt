@@ -7,6 +7,7 @@ import java.net.URI
 import java.nio.channels.Channels
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
+import kotlin.io.path.Path
 import kotlin.io.path.absolutePathString
 import kotlin.io.path.createDirectories
 import kotlin.io.path.div
@@ -60,6 +61,10 @@ class SetupService(private val baseDir: Path, private val useLocalCache: Boolean
             .waitFor(60, TimeUnit.MINUTES)
 
         return GameFiles(cleanArtifact, listOf(neoUniversal, compiledArtifact))
+    }
+
+    fun getTransformLibPath(): Path {
+        return System.getProperty("org.sinytra.transformer.path")?.let(::Path) ?: throw RuntimeException("Transform lib not found")
     }
 
     private fun downloadFile(url: String, dest: Path) {
