@@ -39,8 +39,11 @@ const val LOADER_NEOFORGE = "neoforge"
 @Serializable
 private data class MRProject(
     override val id: String,
-    override val name: String
+    val slug: String,
+    override val name: String,
+    override val iconUrl: String
 ) : PlatformProject {
+    override val url: String = "https://modrinth.com/mod/$slug"
     override val platform: ProjectPlatform = ProjectPlatform.MODRINTH
 }
 

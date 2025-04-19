@@ -8,6 +8,8 @@ import kotlin.io.path.div
 interface PlatformProject {
     val id: String
     val name: String
+    val iconUrl: String
+    val url: String
     val platform: ProjectPlatform
 }
 

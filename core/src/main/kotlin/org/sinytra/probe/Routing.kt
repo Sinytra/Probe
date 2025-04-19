@@ -7,6 +7,7 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.coroutineScope
+import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.Serializable
 import org.sinytra.probe.model.ProjectPlatform
 import org.sinytra.probe.model.TestResult
@@ -15,6 +16,16 @@ import org.sinytra.probe.service.PersistenceService
 
 @Serializable
 data class TestRequestBody(val platform: ProjectPlatform, val id: String)
+@Serializable
+data class TestResponseBody(
+    val modid: String,
+    val iconUrl: String,
+    val projectUrl: String,
+    val gameVersion: String,
+    val toolchainVersion: String,
+    val passing: Boolean,
+    val createdAt: LocalDateTime
+)
 
 fun Application.configureRouting(platforms: GlobalPlatformService, transformation: TransformationService,
                                  gameVersion: String, toolchainVersion: String,
@@ -41,8 +52,18 @@ fun Application.configureRouting(platforms: GlobalPlatformService, transformatio
                     val transResult = transformation.runTransformation(resolved, gameVersion)
                     persistence.saveResult(project, transResult, gameVersion, toolchainVersion)
                 }
+                
+                val response = TestResponseBody(
+                    result.modid,
+                    project.iconUrl,
+                    project.url,
+                    result.gameVersion,
+                    result.toolchainVersion,
+                    result.passing,
+                    result.createdAt
+                )
 
-                call.respond(result)
+                call.respond(response)
             } catch (ex: IllegalStateException) {
                 call.respond(HttpStatusCode.BadRequest)
             } catch (ex: JsonConvertException) {

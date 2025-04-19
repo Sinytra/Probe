@@ -13,6 +13,7 @@ shadow-version = "9.0.0-beta12"
 lettuce-version = "6.5.0.RELEASE"
 kotlinx-coroutines-version = "1.10.2"
 log4j-version = "2.24.3"
+kord-version = "0.15.0"
 
 [libraries]
 ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor-version" }
@@ -42,6 +43,7 @@ fart = { module = "org.sinytra:ForgeAutoRenamingTool", version.ref = "fart-versi
 forgified-fabric-loader = { module = "org.sinytra:forgified-fabric-loader", version.ref = "forgified-fabric-loader-version" }
 access-widener = { module = "net.fabricmc:access-widener", version.ref = "access-widener-version" }
 kotlinx-coroutines-reactive = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-reactive", version.ref = "kotlinx-coroutines-version" }
+kord-core = { module = "dev.kord:kord-core", version.ref = "kord-version" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin-version" }
