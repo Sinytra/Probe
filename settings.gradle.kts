@@ -17,4 +17,3 @@ rootProject.name = "Probe"
 include("core")
 include("discord")
 include("game")
-include("transform")

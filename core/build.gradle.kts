@@ -42,6 +42,11 @@ ktor {
 
 repositories {
     mavenCentral()
+    mavenLocal { 
+        content { 
+            includeGroup("org.sinytra.connector")
+        }
+    }
 }
 
 afterEvaluate {
@@ -49,7 +54,7 @@ afterEvaluate {
 }
 
 dependencies {
-    transfomer(project(":transform"))
+    transfomer("org.sinytra.connector:transformer:2.0.0-beta.8+1.21.1+dev-g20c90a4")
 
     implementation(platform(libs.log4j.bom))
     implementation(libs.log4j.core)
