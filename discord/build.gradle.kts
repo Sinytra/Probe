@@ -4,7 +4,6 @@ plugins {
 }
 
 group = "org.sinytra.probe"
-version = "1.0-SNAPSHOT"
 
 repositories {
     mavenCentral()

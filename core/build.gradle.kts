@@ -5,7 +5,6 @@ plugins {
 }
 
 group = "org.sinytra.probe"
-version = "0.0.1"
 
 val neoForgeVersion: String by rootProject
 val gameVersion: String by rootProject
@@ -36,13 +35,21 @@ ktor {
     docker {
         localImageName.set("sinytra/probe/core")
         imageTag.set(version as String)
+        externalRegistry.set(
+            io.ktor.plugin.features.DockerImageRegistry.externalRegistry(
+                username = providers.environmentVariable("DOCKER_REG_USERNAME"),
+                password = providers.environmentVariable("DOCKER_REG_PASSWORD"),
+                project = provider { "sinytra/probe/core" },
+                hostname = provider { "ghcr.io" }
+            )
+        )
     }
 }
 
 repositories {
     mavenCentral()
-    mavenLocal { 
-        content { 
+    mavenLocal {
+        content {
             includeGroup("org.sinytra.connector")
         }
     }
