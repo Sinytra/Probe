@@ -15,7 +15,22 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNamingStrategy
 
+interface ResponseBase {
+    val type: ResultType
+}
+
+@Serializable
+data class ResponseBaseData(
+    override val type: ResultType
+) : ResponseBase
+
 // TODO Shared types
+@Serializable
+enum class ResultType {
+    TESTED,
+    NATIVE
+}
+
 @Serializable
 data class TestResponseBody(
     val modid: String,
@@ -25,8 +40,18 @@ data class TestResponseBody(
     val gameVersion: String,
     val toolchainVersion: String,
     val passing: Boolean,
-    val createdAt: LocalDateTime
-)
+    val createdAt: LocalDateTime,
+    override val type: ResultType = ResultType.TESTED
+) : ResponseBase
+
+@Serializable
+data class SkippedResponseBody(
+    val slug: String,
+    val iconUrl: String,
+    val projectUrl: String,
+    val gameVersion: String,
+    override val type: ResultType = ResultType.NATIVE
+) : ResponseBase
 
 class ProjectNotFoundException(message: String) : Exception(message)
 
@@ -34,7 +59,7 @@ object TransformRunner {
     @Serializable
     private data class ProbeRequestBody(val platform: String, val id: String)
 
-    suspend fun runTransformation(platform: String, slug: String): TestResponseBody {
+    suspend fun runTransformation(platform: String, slug: String): ResponseBase {
         val endpoint = System.getenv("CORE_API_URL") ?: "localhost:8080"
 
         val client = HttpClient {
@@ -61,6 +86,8 @@ object TransformRunner {
             throw ProjectNotFoundException("Project not found")
         }
 
-        return resp.body<TestResponseBody>()
+        val base = resp.body<ResponseBaseData>()
+        return if (base.type == ResultType.TESTED) resp.body<TestResponseBody>()
+        else resp.body<SkippedResponseBody>()
     }
 }

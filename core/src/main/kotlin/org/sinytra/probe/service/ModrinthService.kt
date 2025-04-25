@@ -39,7 +39,7 @@ const val LOADER_NEOFORGE = "neoforge"
 @Serializable
 private data class MRProject(
     override val id: String,
-    val slug: String,
+    override val slug: String,
     override val name: String,
     override val iconUrl: String
 ) : PlatformProject {
@@ -158,6 +158,22 @@ class ModrinthService(
         }
 
         return Json.decodeFromString<MRResolvedVersion>(data)
+    }
+
+    override suspend fun isNeoForgeAvailable(project: PlatformProject, gameVersion: String): Boolean {
+        val cmd = redis.coroutines()
+        val key = "modrinth:project:${project.id}:neoforge"
+
+        val data = cmd.get(key)
+
+        if (data == null) {
+            val available = computeProjectVersion(project.id, gameVersion, LOADER_NEOFORGE) != null
+
+            cmd.set(key, available.toString())
+            return available
+        }
+
+        return data == "true"
     }
 
     override suspend fun resolveProject(project: PlatformProject, gameVersion: String): ResolvedProject? {

@@ -16,6 +16,13 @@ import org.sinytra.probe.service.PersistenceService
 
 @Serializable
 data class TestRequestBody(val platform: ProjectPlatform, val id: String)
+
+@Serializable
+enum class ResultType {
+    TESTED,
+    NATIVE
+}
+
 @Serializable
 data class TestResponseBody(
     val modid: String,
@@ -25,7 +32,17 @@ data class TestResponseBody(
     val gameVersion: String,
     val toolchainVersion: String,
     val passing: Boolean,
-    val createdAt: LocalDateTime
+    val createdAt: LocalDateTime,
+    val type: ResultType
+)
+
+@Serializable
+data class SkippedResponseBody(
+    val slug: String,
+    val iconUrl: String,
+    val projectUrl: String,
+    val gameVersion: String,
+    val type: ResultType
 )
 
 fun Application.configureRouting(platforms: GlobalPlatformService, transformation: TransformationService,
@@ -48,6 +65,17 @@ fun Application.configureRouting(platforms: GlobalPlatformService, transformatio
                 val project = platforms.getProject(body.platform, body.id)
                     ?: return@post call.respond(HttpStatusCode.NotFound)
 
+                val ifNeoForge = platforms.isNeoForgeAvailable(project, gameVersion)
+                if (ifNeoForge) {
+                    return@post call.respond(SkippedResponseBody(
+                        project.slug,
+                        project.iconUrl,
+                        project.url,
+                        gameVersion,
+                        ResultType.NATIVE
+                    ))
+                }
+
                 val resolved = platforms.resolveProject(project, gameVersion)
                     ?: return@post call.respond(HttpStatusCode.NotFound)
 
@@ -63,7 +91,8 @@ fun Application.configureRouting(platforms: GlobalPlatformService, transformatio
                     result.gameVersion,
                     result.toolchainVersion,
                     result.passing,
-                    result.createdAt
+                    result.createdAt,
+                    ResultType.TESTED
                 )
 
                 call.respond(response)
