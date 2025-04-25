@@ -21,6 +21,7 @@ data class TestResponseBody(
     val modid: String,
     val iconUrl: String,
     val projectUrl: String,
+    val version: String,
     val gameVersion: String,
     val toolchainVersion: String,
     val passing: Boolean,
@@ -51,11 +52,14 @@ fun Application.configureRouting(platforms: GlobalPlatformService, transformatio
                     ?: return@post call.respond(HttpStatusCode.NotFound)
 
                 val result: TestResult = asyncTransform.transform(project, resolved, gameVersion, toolchainVersion)
-                
+
+                val version = platforms.getVersion(project, result.versionId)
+
                 val response = TestResponseBody(
                     result.modid,
                     project.iconUrl,
                     project.url,
+                    version?.versionNumber ?: "unknown",
                     result.gameVersion,
                     result.toolchainVersion,
                     result.passing,

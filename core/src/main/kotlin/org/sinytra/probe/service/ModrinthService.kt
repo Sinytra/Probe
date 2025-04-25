@@ -50,6 +50,7 @@ private data class MRProject(
 @Serializable
 private data class MRVersion(
     val id: String,
+    val versionNumber: String,
     val projectId: String,
     val loaders: Set<String>,
     val files: List<MRVersionFile>,
@@ -71,7 +72,8 @@ private data class MRVersionDependency(
 @Serializable
 data class MRResolvedVersion(
     override val projectId: String,
-    val versionId: String,
+    override val versionId: String,
+    override val versionNumber: String,
     override val path: String,
     val dependencies: List<String>
 ) : ProjectVersion
@@ -84,6 +86,13 @@ class Projects {
         @Resource("version")
         class Version(val parent: Id, val loaders: String, val loader_fields: String)
     }
+}
+
+@Suppress("unused")
+@Resource("/$API_V3/version")
+class Versions {
+    @Resource("{id}")
+    class Id(val versions: Versions = Versions(), val id: String)
 }
 
 @OptIn(ExperimentalLettuceCoroutinesApi::class)
@@ -116,7 +125,7 @@ class ModrinthService(
 
     override suspend fun getProject(slug: String): PlatformProject? {
         val cmd = redis.coroutines()
-        val key = "modrinth:$slug"
+        val key = "modrinth:project:$slug"
 
         val cached = cmd.get(key)?.let { Json.decodeFromString<MRProject>(it) }
         if (cached != null) {
@@ -130,6 +139,25 @@ class ModrinthService(
 
         cmd.set(key, Json.encodeToString(data))
         return data
+    }
+
+    override suspend fun getVersion(slug: String, versionId: String): ProjectVersion? {
+        val cmd = redis.coroutines()
+        val key = "modrinth:version:$versionId"
+
+        val data = cmd.get(key)
+
+        if (data == null) {
+            LOGGER.info("Fetching version {}", versionId)
+
+            val ver = findProjectVersion(versionId) ?: return null
+
+            val res = computeVersionFile(ver)
+            cmd.set(key, Json.encodeToString(res))
+            return res
+        }
+
+        return Json.decodeFromString<MRResolvedVersion>(data)
     }
 
     override suspend fun resolveProject(project: PlatformProject, gameVersion: String): ResolvedProject? {
@@ -157,7 +185,7 @@ class ModrinthService(
 
     private suspend fun getOrComputeVersion(project: String, gameVersion: String, loader: String, fallbackLoader: Boolean): MRResolvedVersion? {
         val cmd = redis.coroutines()
-        val key = "modrinth:$project:$gameVersion"
+        val key = "modrinth:project:$project:$gameVersion"
         val data = cmd.get(key)
 
         if (data == null) {
@@ -168,7 +196,9 @@ class ModrinthService(
                 ?: return null
 
             val res = computeVersionFile(ver)
-            cmd.set(key, Json.encodeToString(res))
+            val serialized = Json.encodeToString(res)
+            cmd.set(key, serialized)
+            cmd.set("modrinth:version:${ver.id}", serialized)
             return res
         }
 
@@ -193,6 +223,10 @@ class ModrinthService(
             .body<List<MRVersion>>()
             .firstOrNull()
 
+    private suspend fun findProjectVersion(id: String): MRVersion? =
+        client.get(Versions.Id(id = id))
+            .body<MRVersion>()
+
     private suspend fun computeVersionFile(version: MRVersion): MRResolvedVersion {
         val file = version.files.first()
 
@@ -206,7 +240,7 @@ class ModrinthService(
             .map(MRVersionDependency::projectId)
 
         if (filePath.exists() && filePath.isRegularFile()) {
-            return MRResolvedVersion(version.projectId, version.id, relativePath, dependencies)
+            return MRResolvedVersion(version.projectId, version.id, version.versionNumber, relativePath, dependencies)
         }
 
         filePath.deleteIfExists()
@@ -216,6 +250,6 @@ class ModrinthService(
         val channel: ByteReadChannel = response.body()
         channel.copyAndClose(filePath.toFile().writeChannel())
 
-        return MRResolvedVersion(version.projectId, version.id, relativePath, dependencies)
+        return MRResolvedVersion(version.projectId, version.id, version.versionNumber, relativePath, dependencies)
     }
 }

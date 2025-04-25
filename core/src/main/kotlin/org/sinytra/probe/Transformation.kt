@@ -18,6 +18,7 @@ import kotlin.io.path.inputStream
 @Serializable
 data class TransformationResult(
     val projectId: String,
+    val version: String,
     val dependencyProjectId: List<String>,
     val success: Boolean,
     val modid: String
@@ -48,6 +49,7 @@ class TransformationService(private val platforms: GlobalPlatformService, privat
 
         return TransformationResult(
             project.version.projectId,
+            project.version.versionId,
             otherFiles.map(ProjectVersion::projectId),
             result.success,
             result.primaryModid

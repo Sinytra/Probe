@@ -61,7 +61,7 @@ abstract class CheckCompatCommandBase {
                 }
                 field {
                     name = "Mod version"
-                    value = "(unknown)"
+                    value = result.version
                     inline = true
                 }
                 field {

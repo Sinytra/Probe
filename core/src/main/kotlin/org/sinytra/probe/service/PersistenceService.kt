@@ -22,6 +22,6 @@ class PersistenceService(private val mods: ModRepository, private val projects: 
         }
 
         // Save result
-        return results.addTestResult(BaseTestResult(mod, gameVersion, toolchainVersion, result.success))
+        return results.addTestResult(BaseTestResult(dbProject, result.version, gameVersion, toolchainVersion, result.success))
     }
 }

@@ -21,6 +21,7 @@ data class TestResponseBody(
     val modid: String,
     val iconUrl: String,
     val projectUrl: String,
+    val version: String,
     val gameVersion: String,
     val toolchainVersion: String,
     val passing: Boolean,

@@ -6,7 +6,8 @@ import org.jetbrains.exposed.sql.deleteWhere
 import org.sinytra.probe.db.*
 
 data class BaseTestResult(
-    val mod: Mod,
+    val project: Project,
+    val versionId: String,
     val gameVersion: String,
     val toolchainVersion: String,
     val passing: Boolean
@@ -26,30 +27,36 @@ class PostgresTestResultRepository : TestResultRepository {
     }
 
     override suspend fun testResultByModid(modid: String): TestResult? = suspendTransaction {
-        val dbMod = ModDAO.find { ModTable.modid eq modid }.single()
-        TestResultDAO
-            .find { (TestResultTable.mod eq dbMod.id) }
+        TestResultTable
+            .innerJoin(ProjectTable).innerJoin(ModTable)
+            .select(TestResultTable.columns)
+            .where { ModTable.modid eq modid }
             .limit(1)
+            .map(TestResultDAO::wrapRow)
             .map(::daoToModel)
             .firstOrNull()
     }
 
     override suspend fun getTestResultFor(modid: String, gameVersion: String, toolchainVersion: String): TestResult? = suspendTransaction {
-        val dbMod = ModDAO.find { ModTable.modid eq modid }.single()
-        TestResultDAO
-            .find { (TestResultTable.mod eq dbMod.id) and
-                    (TestResultTable.gameVersion eq gameVersion) and
-                    (TestResultTable.toolchainVersion eq toolchainVersion)
+        TestResultTable
+            .innerJoin(ProjectTable).innerJoin(ModTable)
+            .select(TestResultTable.columns)
+            .where {
+                (ModTable.modid eq modid) and 
+                        (TestResultTable.gameVersion eq gameVersion) and
+                        (TestResultTable.toolchainVersion eq toolchainVersion)
             }
             .limit(1)
+            .map(TestResultDAO::wrapRow)
             .map(::daoToModel)
             .firstOrNull()
     }
 
     override suspend fun addTestResult(result: BaseTestResult): TestResult = suspendTransaction {
-        val dbMod = ModDAO.find { ModTable.modid eq result.mod.modid }.single()
+        val dbProject = ProjectDAO.find { ProjectTable.id eq result.project.internalId }.single()
         TestResultDAO.new {
-            mod = dbMod
+            project = dbProject
+            versionId = result.versionId
             gameVersion = result.gameVersion
             toolchainVersion = result.toolchainVersion
             passing = result.passing
