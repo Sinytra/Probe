@@ -4,16 +4,11 @@ kotlin-version = "2.1.20"
 ktor-version = "3.1.2"
 postgres-version = "42.7.5"
 exposed-version = "0.61.0"
-adapter-data-version = "1.13.20+1.21.1-20240811.191740"
-adapter-definition-version = "1.13.25+1.21.1"
-fart-version = "1.0.12"
-forgified-fabric-loader-version = "2.5.34+0.16.0+1.21.1"
-access-widener-version = "2.1.0"
-shadow-version = "9.0.0-beta12"
 lettuce-version = "6.5.0.RELEASE"
 kotlinx-coroutines-version = "1.10.2"
 log4j-version = "2.24.3"
 kord-version = "0.15.0"
+transformer-version = "2.0.0-beta.8+1.21.1+dev-g20c90a4"
 
 [libraries]
 ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor-version" }
@@ -37,16 +32,11 @@ ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor-vers
 ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor-version" }
 ktor-client-logging = { module = "io.ktor:ktor-client-logging", version.ref = "ktor-version" }
 ktor-client-resources = { module = "io.ktor:ktor-client-resources", version.ref = "ktor-version" }
-adapter-definition = { module = "org.sinytra.adapter:definition", version.ref = "adapter-definition-version" }
-adapter-data = { module = "org.sinytra.adapter:adapter", version.ref = "adapter-data-version" }
-fart = { module = "org.sinytra:ForgeAutoRenamingTool", version.ref = "fart-version" }
-forgified-fabric-loader = { module = "org.sinytra:forgified-fabric-loader", version.ref = "forgified-fabric-loader-version" }
-access-widener = { module = "net.fabricmc:access-widener", version.ref = "access-widener-version" }
 kotlinx-coroutines-reactive = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-reactive", version.ref = "kotlinx-coroutines-version" }
 kord-core = { module = "dev.kord:kord-core", version.ref = "kord-version" }
+connector-tranformer = { module = "org.sinytra.connector:transformer", version.ref = "transformer-version" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin-version" }
 ktor = { id = "io.ktor.plugin", version.ref = "ktor-version" }
 kotlin-plugin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin-version" }
-shadow = { id = "com.gradleup.shadow", version.ref = "shadow-version" }

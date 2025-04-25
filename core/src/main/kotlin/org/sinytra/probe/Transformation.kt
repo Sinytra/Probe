@@ -11,6 +11,7 @@ import java.lang.ProcessBuilder.Redirect
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
 import kotlin.io.path.absolutePathString
+import kotlin.io.path.createDirectories
 import kotlin.io.path.div
 import kotlin.io.path.inputStream
 
@@ -40,7 +41,8 @@ class TransformationService(private val platforms: GlobalPlatformService, privat
         val allFiles = (listOf(mainFile) + otherFiles).map(ProjectVersion::getFilePath)
 
         val classPath = gameFiles.loaderFiles.toMutableList() + resolveMandatedLibraries(gameVersion)
-        val workDir = project.version.getFilePath().parent
+        val workDir = project.version.getFilePath().parent / "output"
+        workDir.createDirectories()
 
         val result = runTransformer(workDir, allFiles, gameFiles.cleanFile, classPath, gameVersion)
 

@@ -6,11 +6,11 @@ import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import kotlinx.coroutines.coroutineScope
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.Serializable
 import org.sinytra.probe.model.ProjectPlatform
 import org.sinytra.probe.model.TestResult
+import org.sinytra.probe.service.AsyncTransformationRunner
 import org.sinytra.probe.service.GlobalPlatformService
 import org.sinytra.probe.service.PersistenceService
 
@@ -30,6 +30,8 @@ data class TestResponseBody(
 fun Application.configureRouting(platforms: GlobalPlatformService, transformation: TransformationService,
                                  gameVersion: String, toolchainVersion: String,
                                  persistence: PersistenceService) {
+    val asyncTransform = AsyncTransformationRunner(transformation, persistence)
+
     routing {
         get("/") {
             call.respondText("Hello World!")
@@ -48,10 +50,7 @@ fun Application.configureRouting(platforms: GlobalPlatformService, transformatio
                 val resolved = platforms.resolveProject(project, gameVersion)
                     ?: return@post call.respond(HttpStatusCode.NotFound)
 
-                val result: TestResult = persistence.getExistingResult(project, gameVersion, toolchainVersion) ?: coroutineScope { 
-                    val transResult = transformation.runTransformation(resolved, gameVersion)
-                    persistence.saveResult(project, transResult, gameVersion, toolchainVersion)
-                }
+                val result: TestResult = asyncTransform.transform(project, resolved, gameVersion, toolchainVersion)
                 
                 val response = TestResponseBody(
                     result.modid,

@@ -15,26 +15,37 @@ import kotlin.io.path.exists
 
 data class GameFiles(val cleanFile: Path, val loaderFiles: List<Path>)
 
-class SetupService(private val baseDir: Path, private val useLocalCache: Boolean, private val nfrtVersion: String, private val neoForgeVersion: String) {
+class SetupService(
+    private val baseDir: Path,
+    private val useLocalCache: Boolean,
+    private val nfrtVersion: String,
+    private val neoForgeVersion: String,
+    private val transformerVersion: String
+) {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(SetupService::class.java)
+        private val NEO_MAVEN = "https://maven.neoforged.net/releases"
+        private val SINYTRA_MAVEN = "https://maven.sinytra.org"
     }
 
-    fun installLoader(): GameFiles {
-        val outputDir = baseDir / "output"
-        outputDir.createDirectories()
+    val outputDir: Path = baseDir / "output"
 
+    init {
+        outputDir.createDirectories()
+    }
+
+    fun installDependencies(): GameFiles {
         val cleanArtifact = outputDir / "clean.jar"
         val compiledArtifact = outputDir / "compiled.jar"
-        
+
         val neoUniversal = baseDir / "neo-universal.jar"
-        val neoUniversalUrl = getMavenUrl("net.neoforged", "neoforge", neoForgeVersion, "universal")
+        val neoUniversalUrl = getMavenUrl(NEO_MAVEN, "net.neoforged", "neoforge", neoForgeVersion, "universal")
         downloadFile(neoUniversalUrl, neoUniversal)
 
         val runtime = baseDir / "runtime.jar"
-        val nfrtUrl = getMavenUrl("net.neoforged", "neoform-runtime", nfrtVersion, "all")
+        val nfrtUrl = getMavenUrl(NEO_MAVEN, "net.neoforged", "neoform-runtime", nfrtVersion, "all")
         downloadFile(nfrtUrl, runtime)
-        
+
         val workDir = baseDir / ".temp"
         workDir.createDirectories()
 
@@ -60,11 +71,27 @@ class SetupService(private val baseDir: Path, private val useLocalCache: Boolean
             .start()
             .waitFor(60, TimeUnit.MINUTES)
 
+        // Initialize transform lib
+        getTransformLibPath()
+
         return GameFiles(cleanArtifact, listOf(neoUniversal, compiledArtifact))
     }
 
     fun getTransformLibPath(): Path {
-        return System.getProperty("org.sinytra.transformer.path")?.let(::Path) ?: throw RuntimeException("Transform lib not found")
+        val provided = System.getProperty("org.sinytra.transformer.path")
+        if (provided != null) {
+            return Path(provided)
+        }
+
+        val outputFile = outputDir / "transformer-$transformerVersion-all.jar"
+
+        val transformerUrl = getMavenUrl(SINYTRA_MAVEN, "org.sinytra.connector", "transformer", transformerVersion, "all")
+        downloadFile(transformerUrl, outputFile)
+        if (!outputFile.exists()) {
+            throw IllegalStateException("Failed to download transformer lib")
+        }
+
+        return outputFile
     }
 
     private fun downloadFile(url: String, dest: Path) {
@@ -78,8 +105,8 @@ class SetupService(private val baseDir: Path, private val useLocalCache: Boolean
             }
         }
     }
-    
-    private fun getMavenUrl(group: String, name: String, version: String, classifier: String? = null): String {
-        return "https://maven.neoforged.net/releases/${group.replace('.', '/')}/$name/$version/$name-$version${classifier?.let { "-$it" }}.jar"
+
+    private fun getMavenUrl(repo: String, group: String, name: String, version: String, classifier: String? = null): String {
+        return "$repo/${group.replace('.', '/')}/$name/$version/$name-$version${classifier?.let { "-$it" }}.jar"
     }
 }

@@ -26,7 +26,6 @@ application {
         "-Dorg.sinytra.probe.storage_path=${file("run").absolutePath}",
         "-Dorg.sinytra.probe.neo_version=$neoForgeVersion",
         "-Dorg.sinytra.probe.game_version=$gameVersion",
-        "-Dorg.sinytra.probe.toolchain_version=0.0.1",
         "-Dorg.sinytra.probe.local_cache=true",
         "-Dorg.probe.logging.level=DEBUG",
         "--add-opens", "java.base/java.lang.invoke=ALL-UNNAMED"
@@ -50,11 +49,14 @@ repositories {
 }
 
 afterEvaluate {
-    (application.applicationDefaultJvmArgs as MutableList<String>) += listOf("-Dorg.sinytra.transformer.path=${transfomer.singleFile.absolutePath}")
+    (application.applicationDefaultJvmArgs as MutableList<String>) += listOf(
+        "-Dorg.sinytra.transformer.path=${transfomer.singleFile.absolutePath}",
+        "-Dorg.sinytra.probe.transformer_version=${libs.connector.tranformer.get().version!!}",
+    )
 }
 
 dependencies {
-    transfomer("org.sinytra.connector:transformer:2.0.0-beta.8+1.21.1+dev-g20c90a4")
+    transfomer(libs.connector.tranformer)
 
     implementation(platform(libs.log4j.bom))
     implementation(libs.log4j.core)

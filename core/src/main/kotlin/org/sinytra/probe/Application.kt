@@ -32,13 +32,13 @@ fun Application.module() {
     val nfrtVersion = environment.config.property("probe.nfrtVersion").getString()
     val neoForgeVersion = environment.config.property("probe.neoForgeVersion").getString()
     val gameVersion = environment.config.property("probe.gameVersion").getString()
-    val toolchainVersion = environment.config.property("probe.toolchainVersion").getString()
+    val transformerVersion = environment.config.property("probe.transformerVersion").getString()
 
     val setupDir = getBaseStoragePath() / ".setup"
     setupDir.createDirectories()
-    val setup = SetupService(setupDir, useLocalCache, nfrtVersion, neoForgeVersion)
+    val setup = SetupService(setupDir, useLocalCache, nfrtVersion, neoForgeVersion, transformerVersion)
 
-    val gameFiles = setup.installLoader()
+    val gameFiles = setup.installDependencies()
 
     val modRepository = PostgresModRepository()
     val projectRepository = PostgresProjectRepository()
@@ -53,7 +53,7 @@ fun Application.module() {
 
     configureSerialization()
     configureDatabases()
-    configureRouting(platforms, transformation, gameVersion, toolchainVersion, persistence)
+    configureRouting(platforms, transformation, gameVersion, transformerVersion, persistence)
 
     transaction {
         SchemaUtils.create(ModTable)
