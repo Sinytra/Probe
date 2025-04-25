@@ -28,13 +28,10 @@ class SetupService(
         private val SINYTRA_MAVEN = "https://maven.sinytra.org"
     }
 
-    val outputDir: Path = baseDir / "output"
-
-    init {
-        outputDir.createDirectories()
-    }
-
     fun installDependencies(): GameFiles {
+        val outputDir: Path = baseDir / "output"
+        outputDir.createDirectories()
+
         val cleanArtifact = outputDir / "clean.jar"
         val compiledArtifact = outputDir / "compiled.jar"
 
@@ -83,7 +80,7 @@ class SetupService(
             return Path(provided)
         }
 
-        val outputFile = outputDir / "transformer-$transformerVersion-all.jar"
+        val outputFile = baseDir / "transformer-$transformerVersion-all.jar"
 
         val transformerUrl = getMavenUrl(SINYTRA_MAVEN, "org.sinytra.connector", "transformer", transformerVersion, "all")
         downloadFile(transformerUrl, outputFile)
