@@ -80,6 +80,10 @@ object TransformRunner {
         val resp = client.post("/api/v1/probe") {
             contentType(ContentType.Application.Json)
             setBody(ProbeRequestBody(platform, slug))
+            timeout { 
+                socketTimeoutMillis = 60000
+                requestTimeoutMillis = 60000
+            }
         }
 
         if (resp.status == HttpStatusCode.NotFound) {
