@@ -48,7 +48,8 @@ data class SkippedResponseBody(
 fun Application.configureRouting(platforms: GlobalPlatformService, transformation: TransformationService,
                                  gameVersion: String, toolchainVersion: String,
                                  persistence: PersistenceService) {
-    val asyncTransform = AsyncTransformationRunner(transformation, persistence)
+    val maxThreadCount = System.getenv("org.sinytra.probe.max_threads")?.toIntOrNull() ?: 10
+    val asyncTransform = AsyncTransformationRunner(transformation, persistence, maxThreadCount)
 
     routing {
         get("/") {

@@ -10,10 +10,7 @@ import org.slf4j.LoggerFactory
 import java.lang.ProcessBuilder.Redirect
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
-import kotlin.io.path.absolutePathString
-import kotlin.io.path.createDirectories
-import kotlin.io.path.div
-import kotlin.io.path.inputStream
+import kotlin.io.path.*
 
 @Serializable
 data class TransformationResult(
@@ -30,6 +27,7 @@ private data class TransformLibOutput(
     val primaryModid: String
 ) 
 
+@OptIn(ExperimentalPathApi::class)
 class TransformationService(private val platforms: GlobalPlatformService, private val gameFiles: GameFiles, private val setup: SetupService) {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(TransformationService::class.java)
@@ -43,9 +41,15 @@ class TransformationService(private val platforms: GlobalPlatformService, privat
 
         val classPath = gameFiles.loaderFiles.toMutableList() + resolveMandatedLibraries(gameVersion)
         val workDir = project.version.getFilePath().parent / "output"
+
+        if (workDir.exists()) {
+            workDir.deleteRecursively()
+        }
         workDir.createDirectories()
 
         val result = runTransformer(workDir, allFiles, gameFiles.cleanFile, classPath, gameVersion)
+
+        workDir.deleteRecursively()
 
         return TransformationResult(
             project.version.projectId,
