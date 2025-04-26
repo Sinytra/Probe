@@ -10,6 +10,7 @@ log4j-version = "2.24.3"
 kord-version = "0.15.0"
 transformer-version = "2.0.0-beta.8+1.21.1+dev-g20c90a4"
 kotlinx-hocon-version = "1.8.1"
+jib-version = "3.4.5"
 
 [libraries]
 ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor-version" }
@@ -42,3 +43,4 @@ kotlinx-serialization-hocon = { module = "org.jetbrains.kotlinx:kotlinx-serializ
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin-version" }
 ktor = { id = "io.ktor.plugin", version.ref = "ktor-version" }
 kotlin-plugin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin-version" }
+jib = { id = "com.google.cloud.tools.jib", version.ref = "jib-version" }

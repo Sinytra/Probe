@@ -63,7 +63,7 @@ private fun isAllowedChannel(whitelist: List<Snowflake>, id: Snowflake): Boolean
 }
 
 private fun readConfig(): Config {
-    val customConfig = System.getProperty("org.sinytra.probe.discord.config_path")?.let(::Path)
+    val customConfig = System.getenv("org.sinytra.probe.discord.config_path")?.let(::Path)
     if (customConfig != null && customConfig.exists()) {
         return customConfig.bufferedReader().use(ConfigFactory::parseReader)
     }
