@@ -60,6 +60,10 @@ class SetupService(
             localCachePath.createDirectories()
             args += listOf("--home-dir", localCachePath.absolutePathString())
         }
+        
+        if (System.getenv("org.sinytra.probe.core.verbose") == "true") {
+            args += "--verbose"
+        }
 
         ProcessBuilder(args)
             .directory(outputDir.toFile())
