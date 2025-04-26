@@ -20,7 +20,9 @@ import kotlin.io.path.createDirectories
 import kotlin.io.path.div
 
 fun main(args: Array<String>) {
-    io.ktor.server.netty.EngineMain.main(args)
+    val configPath = System.getenv("org.sinytra.probe.config_path")
+    val appArgs = if (configPath != null) args + arrayOf("-config=$configPath") else args
+    io.ktor.server.netty.EngineMain.main(appArgs)
 }
 
 var baseStoragePathInternal: Path? = null

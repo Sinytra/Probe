@@ -17,7 +17,7 @@ val transfomer: Configuration by configurations.creating {
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
 application {
-    mainClass = "io.ktor.server.netty.EngineMain"
+    mainClass = "org.sinytra.probe.ApplicationKt"
 
     val isDevelopment: Boolean = project.ext.has("development")
     applicationDefaultJvmArgs = mutableListOf(
