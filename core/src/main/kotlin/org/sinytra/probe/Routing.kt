@@ -12,6 +12,7 @@ import org.sinytra.probe.model.ProjectPlatform
 import org.sinytra.probe.model.TestResult
 import org.sinytra.probe.service.AsyncTransformationRunner
 import org.sinytra.probe.service.GlobalPlatformService
+import org.sinytra.probe.service.LOADER_FABRIC
 import org.sinytra.probe.service.PersistenceService
 
 @Serializable
@@ -20,8 +21,17 @@ data class TestRequestBody(val platform: ProjectPlatform, val id: String)
 @Serializable
 enum class ResultType {
     TESTED,
-    NATIVE
+    NATIVE,
+    UNAVAILABLE
 }
+
+@Serializable
+data class UnavailableResponseBody(
+    val slug: String,
+    val loader: String,
+    val gameVersion: String,
+    val type: ResultType
+)
 
 @Serializable
 data class TestResponseBody(
@@ -78,7 +88,12 @@ fun Application.configureRouting(platforms: GlobalPlatformService, transformatio
                 }
 
                 val resolved = platforms.resolveProject(project, gameVersion)
-                    ?: return@post call.respond(HttpStatusCode.NotFound)
+                    ?: return@post call.respond(UnavailableResponseBody(
+                        project.slug,
+                        LOADER_FABRIC,
+                        gameVersion,
+                        ResultType.UNAVAILABLE
+                    ))
 
                 val result: TestResult = asyncTransform.transform(project, resolved, gameVersion, toolchainVersion)
 

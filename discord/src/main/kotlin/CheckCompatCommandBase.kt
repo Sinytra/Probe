@@ -50,10 +50,22 @@ abstract class CheckCompatCommandBase {
             return
         }
 
-        if (result.type == ResultType.TESTED) {
-            response.respondTestResult(result as TestResponseBody)
-        } else {
-            response.respondSkippedTest(result as SkippedResponseBody)
+        when (result.type) {
+            ResultType.TESTED -> {
+                response.respondTestResult(result as TestResponseBody)
+            }
+            ResultType.UNAVAILABLE -> {
+                response.respondUnavailableResult(result as UnavailableResponseBody)
+            }
+            else -> {
+                response.respondSkippedTest(result as SkippedResponseBody)
+            }
+        }
+    }
+
+    private suspend fun DeferredMessageInteractionResponseBehavior.respondUnavailableResult(result: UnavailableResponseBody) {
+        respond {
+            content = ":warning: Project `${result.slug}` is not available for ${result.loader.capitalize()} on ${result.gameVersion}"
         }
     }
 

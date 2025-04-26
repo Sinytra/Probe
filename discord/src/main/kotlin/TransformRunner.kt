@@ -28,7 +28,8 @@ data class ResponseBaseData(
 @Serializable
 enum class ResultType {
     TESTED,
-    NATIVE
+    NATIVE,
+    UNAVAILABLE
 }
 
 @Serializable
@@ -51,6 +52,14 @@ data class SkippedResponseBody(
     val projectUrl: String,
     val gameVersion: String,
     override val type: ResultType = ResultType.NATIVE
+) : ResponseBase
+
+@Serializable
+data class UnavailableResponseBody(
+    val slug: String,
+    val loader: String,
+    val gameVersion: String,
+    override val type: ResultType
 ) : ResponseBase
 
 class ProjectNotFoundException(message: String) : Exception(message)
@@ -91,7 +100,10 @@ object TransformRunner {
         }
 
         val base = resp.body<ResponseBaseData>()
-        return if (base.type == ResultType.TESTED) resp.body<TestResponseBody>()
-        else resp.body<SkippedResponseBody>()
+        return when (base.type) {
+            ResultType.TESTED -> resp.body<TestResponseBody>()
+            ResultType.UNAVAILABLE -> resp.body<UnavailableResponseBody>()
+            else -> resp.body<SkippedResponseBody>()
+        }
     }
 }

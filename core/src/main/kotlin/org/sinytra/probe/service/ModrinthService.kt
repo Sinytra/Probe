@@ -183,7 +183,7 @@ class ModrinthService(
     }
 
     private suspend fun resolveProjectInternal(project: String, gameVersion: String, fallbackLoader: Boolean): ResolvedProject? {
-        val ver = getOrComputeVersion(project, gameVersion, LOADER_FABRIC, fallbackLoader) ?: throw RuntimeException("Error resolving project $project")
+        val ver = getOrComputeVersion(project, gameVersion, LOADER_FABRIC, fallbackLoader) ?: return null
 
         val deps: List<ResolvedProject> = channelFlow {
             ver.dependencies.forEach { dep ->
