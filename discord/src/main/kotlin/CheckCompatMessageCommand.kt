@@ -22,13 +22,14 @@ class CheckCompatMessageCommand : CheckCompatCommandBase() {
         )
     }
 
-    suspend fun GuildMessageCommandInteractionCreateEvent.handle() {
+    suspend fun GuildMessageCommandInteractionCreateEvent.handle(ephemeral: Boolean) {
         val msgContent = interaction.target.fetchMessage().content
 
         val args = getModArgs(msgContent)
 
         if (args != null) {
-            val response = interaction.deferPublicResponse()
+            val response = if (ephemeral) interaction.deferEphemeralResponse()
+            else interaction.deferPublicResponse()
 
             checkCompat(response, args.platform, args.slug)
         } else {

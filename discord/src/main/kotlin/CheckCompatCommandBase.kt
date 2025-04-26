@@ -1,13 +1,12 @@
 package org.sinytra
 
 import dev.kord.common.Color
-import dev.kord.core.behavior.interaction.response.DeferredPublicMessageInteractionResponseBehavior
+import dev.kord.core.behavior.interaction.response.DeferredMessageInteractionResponseBehavior
 import dev.kord.core.behavior.interaction.response.respond
 import dev.kord.rest.builder.message.embed
 import kotlinx.datetime.format.FormatStringsInDatetimeFormats
 import kotlinx.datetime.toJavaLocalDateTime
 import org.slf4j.LoggerFactory
-import java.lang.Exception
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
@@ -20,7 +19,7 @@ abstract class CheckCompatCommandBase {
         private val CONNECTOR_PROJECTS = setOf("connector", "u58R1TMW")
     }
 
-    suspend fun checkCompat(response: DeferredPublicMessageInteractionResponseBehavior, platform: String, slug: String) {
+    suspend fun checkCompat(response: DeferredMessageInteractionResponseBehavior, platform: String, slug: String) {
         if (slug in REPLACED_PROJECTS) {
             response.respond { 
                 content = "When using Connector, please install the [Forgified Fabric API](https://modrinth.com/mod/forgified-fabric-api) instead."
@@ -58,7 +57,7 @@ abstract class CheckCompatCommandBase {
         }
     }
 
-    private suspend fun DeferredPublicMessageInteractionResponseBehavior.respondTestResult(result: TestResponseBody) {
+    private suspend fun DeferredMessageInteractionResponseBehavior.respondTestResult(result: TestResponseBody) {
         val green = Color(0, 255, 0)
         val red = Color(255, 0, 0)
         val link = result.projectUrl
@@ -108,7 +107,7 @@ abstract class CheckCompatCommandBase {
         }
     }
 
-    suspend fun DeferredPublicMessageInteractionResponseBehavior.respondSkippedTest(result: SkippedResponseBody) {
+    suspend fun DeferredMessageInteractionResponseBehavior.respondSkippedTest(result: SkippedResponseBody) {
         val neoOrange = Color(215, 116, 47)
         val link = result.projectUrl
 

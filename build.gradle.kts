@@ -8,7 +8,11 @@ version = gradleutils.version
 
 val CI: Provider<String> = providers.environmentVariable("CI")
 if (!CI.isPresent) {
-    version = "$version+dev-${gradleutils.gitInfo["hash"]}"
+    version = "$version.dev-${gradleutils.gitInfo["hash"]}"
+}
+
+allprojects {
+    version = rootProject.version
 }
 
 repositories {

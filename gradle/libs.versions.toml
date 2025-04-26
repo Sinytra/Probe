@@ -9,6 +9,7 @@ kotlinx-coroutines-version = "1.10.2"
 log4j-version = "2.24.3"
 kord-version = "0.15.0"
 transformer-version = "2.0.0-beta.8+1.21.1+dev-g20c90a4"
+kotlinx-hocon-version = "1.8.1"
 
 [libraries]
 ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor-version" }
@@ -35,6 +36,7 @@ ktor-client-resources = { module = "io.ktor:ktor-client-resources", version.ref 
 kotlinx-coroutines-reactive = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-reactive", version.ref = "kotlinx-coroutines-version" }
 kord-core = { module = "dev.kord:kord-core", version.ref = "kord-version" }
 connector-tranformer = { module = "org.sinytra.connector:transformer", version.ref = "transformer-version" }
+kotlinx-serialization-hocon = { module = "org.jetbrains.kotlinx:kotlinx-serialization-hocon", version.ref = "kotlinx-hocon-version" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin-version" }

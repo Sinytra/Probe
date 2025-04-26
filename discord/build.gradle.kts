@@ -11,6 +11,7 @@ repositories {
 
 dependencies {
     implementation(libs.kord.core)
+    implementation(libs.kotlinx.serialization.hocon)
 
     implementation(platform(libs.log4j.bom))
     implementation(libs.log4j.core)
