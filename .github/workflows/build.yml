@@ -4,7 +4,7 @@ on:
   workflow_dispatch: 
 
 jobs:
-  build_test:
+  run_tests:
     runs-on: ubuntu-latest
     
     services:
@@ -15,12 +15,12 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-        volumes:
-          - /probe/dump.rdb:/data/dump.rdb
+          --name probe_redis
+        ports:
+          - 6379:6379
 
     steps:
-      - run: apt update && apt install redis-tools -y
-      - run: redis-cli config get dir
+      - run: sudo apt install redis-tools -y
       - uses: tespkg/actions-cache@v1
         with:
           accessKey: ${{ secrets.S3_ACCESS_KEY }}
@@ -29,10 +29,15 @@ jobs:
           use-fallback: false
 
           # actions/cache compatible properties: https://github.com/actions/cache
-          key: ${{ runner.os }}-mods-${{ hashFiles('/probe/candidates.json') }}
+          key: ${{ runner.os }}-mods-${{ hashFiles('probe/candidates.json') }}
           path: |
-            /probe/candidates.json
-            /probe/dump.rdb
+            probe/candidates.json
+            probe/dump.rdb
           restore-keys: |
             ${{ runner.os }}-mods-
-      - run: redis-cli keys modrinth:version:*
+      - if: ${{ hashFiles('probe/dump.rdb') != '' }}
+        run: |
+          docker stop probe_redis
+          docker cp probe/dump.rdb probe_redis:/data/dump.rdb
+          docker start probe_redis
+      - run: redis-cli KEYS '*'
