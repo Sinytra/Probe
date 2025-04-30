@@ -47,7 +47,7 @@ fun Application.module() {
     val testResultsRepository = PostgresTestResultRepository()
 
     val redis = connectToRedis()
-    val modrinth = ModrinthService(redis)
+    val modrinth = ModrinthService(getBaseStoragePath(), redis)
     val platforms = GlobalPlatformService(mapOf(ProjectPlatform.MODRINTH to modrinth))
 
     val transformation = TransformationService(platforms, gameFiles, setup)

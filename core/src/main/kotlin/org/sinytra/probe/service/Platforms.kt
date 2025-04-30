@@ -9,7 +9,7 @@ interface PlatformProject {
     val id: String
     val slug: String
     val name: String
-    val iconUrl: String
+    val iconUrl: String?
     val url: String
     val platform: ProjectPlatform
 }
@@ -19,6 +19,7 @@ interface ProjectVersion {
     val versionId: String
     val versionNumber: String
     val path: String
+    val dependencies: List<String>
 }
 
 data class ResolvedProject(

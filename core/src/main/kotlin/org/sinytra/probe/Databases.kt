@@ -1,15 +1,10 @@
 package org.sinytra.probe
 
-import io.ktor.http.*
 import io.ktor.server.application.*
-import io.ktor.server.request.*
-import io.ktor.server.response.*
-import io.ktor.server.routing.*
 import io.lettuce.core.RedisClient
 import io.lettuce.core.api.StatefulRedisConnection
-import kotlinx.coroutines.*
-import org.jetbrains.exposed.sql.*
-import java.sql.*
+import org.jetbrains.exposed.sql.Database
+import java.sql.Connection
 
 fun Application.configureDatabases() {
     connectToPostgres(embedded = java.lang.Boolean.getBoolean("io.ktor.development"))

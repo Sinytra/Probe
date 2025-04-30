@@ -23,9 +23,9 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNamingStrategy
-import org.sinytra.probe.getBaseStoragePath
 import org.sinytra.probe.model.ProjectPlatform
 import org.slf4j.LoggerFactory
+import java.nio.file.Path
 import kotlin.io.path.*
 
 private const val MR_API_HOST: String = "api.modrinth.com"
@@ -37,11 +37,11 @@ const val LOADER_FABRIC = "fabric"
 const val LOADER_NEOFORGE = "neoforge"
 
 @Serializable
-private data class MRProject(
+internal data class MRProject(
     override val id: String,
     override val slug: String,
     override val name: String,
-    override val iconUrl: String
+    override val iconUrl: String?
 ) : PlatformProject {
     override val url: String = "https://modrinth.com/mod/$slug"
     override val platform: ProjectPlatform = ProjectPlatform.MODRINTH
@@ -54,7 +54,8 @@ private data class MRVersion(
     val projectId: String,
     val loaders: Set<String>,
     val files: List<MRVersionFile>,
-    val dependencies: List<MRVersionDependency>
+    val dependencies: List<MRVersionDependency>,
+    val gameVersions: List<String>
 )
 
 @Serializable
@@ -75,8 +76,29 @@ data class MRResolvedVersion(
     override val versionId: String,
     override val versionNumber: String,
     override val path: String,
-    val dependencies: List<String>
+    override val dependencies: List<String>
 ) : ProjectVersion
+
+@Serializable
+private data class MRSearchResults(val hits: List<MRSearchResult>)
+
+@Serializable
+data class MRSearchResult(
+    val projectId: String,
+    val slug: String,
+    val name: String,
+    val iconUrl: String?,
+    val versionId: String
+) {
+    internal fun toMRProject(): MRProject = MRProject(projectId, slug, name, iconUrl ?: "")
+}
+
+@Serializable
+data class ProjectSearchResult(
+    val projectId: String,
+    val slug: String,
+    val versionId: String
+)
 
 @Suppress("unused")
 @Resource("/$API_V3/project")
@@ -95,8 +117,13 @@ class Versions {
     class Id(val versions: Versions = Versions(), val id: String)
 }
 
+@Suppress("unused")
+@Resource("/$API_V3/search")
+class Search(val facets: String, val index: String, val limit: Int, val offset: Int)
+
 @OptIn(ExperimentalLettuceCoroutinesApi::class)
 class ModrinthService(
+    private val storagePath: Path,
     private val redis: StatefulRedisConnection<String, String>
 ) : PlatformService {
     companion object {
@@ -115,6 +142,11 @@ class ModrinthService(
                 namingStrategy = JsonNamingStrategy.SnakeCase
             })
         }
+        install(HttpTimeout) {
+            requestTimeoutMillis = 60000
+            connectTimeoutMillis = 60000
+            socketTimeoutMillis = 60000
+        }
         defaultRequest {
             url {
                 protocol = URLProtocol.HTTPS
@@ -125,39 +157,55 @@ class ModrinthService(
 
     override suspend fun getProject(slug: String): PlatformProject? {
         val cmd = redis.coroutines()
-        val key = "modrinth:project:$slug"
+        val slugKey = "modrinth:slug:$slug"
 
-        val cached = cmd.get(key)?.let { Json.decodeFromString<MRProject>(it) }
-        if (cached != null) {
-            return cached
-        }
+        // In case someone passes in an ID
+        getCachedProject("modrinth:project:$slug")?.let { return it }
+        cmd.get(slugKey)?.let { getCachedProject("modrinth:project:$it") }?.let { return it }
 
         val data = client.get(Projects.Id(id = slug))
             .takeIf { it.status.isSuccess() }
             ?.body<MRProject>()
             ?: return null
 
-        cmd.set(key, Json.encodeToString(data))
+        cmd.set("modrinth:project:${data.id}", Json.encodeToString(data))
+        cmd.set(slugKey, data.slug)
         return data
+    }
+
+    suspend fun getCachedProject(key: String): PlatformProject? {
+        val cmd = redis.coroutines()
+        val cached = cmd.get(key)?.let { Json.decodeFromString<MRProject>(it) }
+        return cached
     }
 
     override suspend fun getVersion(slug: String, versionId: String): ProjectVersion? {
         val cmd = redis.coroutines()
         val key = "modrinth:version:$versionId"
 
-        val data = cmd.get(key)
+        val data = cmd.get(key) ?: return resolveVersion(versionId)
 
-        if (data == null) {
-            LOGGER.info("Fetching version {}", versionId)
-
-            val ver = findProjectVersion(versionId) ?: return null
-
-            val res = computeVersionFile(ver)
-            cmd.set(key, Json.encodeToString(res))
-            return res
+        val parsed = Json.decodeFromString<MRResolvedVersion>(data)
+        val actualPath = storagePath.resolve(parsed.path)
+        if (!actualPath.exists()) {
+            cmd.del(key)
+            return resolveVersion(versionId)
         }
 
-        return Json.decodeFromString<MRResolvedVersion>(data)
+        return parsed
+    }
+
+    suspend fun resolveVersion(versionId: String): ProjectVersion? {
+        val cmd = redis.coroutines()
+        val key = "modrinth:version:$versionId"
+
+        LOGGER.info("Fetching version {}", versionId)
+
+        val ver = findProjectVersion(versionId) ?: return null
+
+        val res = computeVersionFile(ver)
+        cmd.set(key, Json.encodeToString(res))
+        return res
     }
 
     override suspend fun isNeoForgeAvailable(project: PlatformProject, gameVersion: String): Boolean {
@@ -167,7 +215,7 @@ class ModrinthService(
         val data = cmd.get(key)
 
         if (data == null) {
-            val available = computeProjectVersion(project.id, gameVersion, LOADER_NEOFORGE) != null
+            val available = computeProjectVersion(project.id, listOf(gameVersion), LOADER_NEOFORGE) != null
 
             cmd.set(key, available.toString())
             return available
@@ -179,16 +227,53 @@ class ModrinthService(
     override suspend fun resolveProject(project: PlatformProject, gameVersion: String): ResolvedProject? {
         project as MRProject
 
-        return resolveProjectInternal(project.id, gameVersion, false)
+        return resolveProjectInternal(project.id, gameVersion, listOf(gameVersion), false)
     }
 
-    private suspend fun resolveProjectInternal(project: String, gameVersion: String, fallbackLoader: Boolean): ResolvedProject? {
-        val ver = getOrComputeVersion(project, gameVersion, LOADER_FABRIC, fallbackLoader) ?: return null
+    suspend fun resolveProject(project: PlatformProject, gameVersions: List<String>, fallbackLoader: Boolean): ResolvedProject? {
+        project as MRProject
+
+        return resolveProjectInternal(project.id, gameVersions.first(), gameVersions, fallbackLoader)
+    }
+
+    suspend fun searchProjects(limit: Int, offset: Int, gameVersion: String, loader: String, excludeLoader: String?): List<ProjectSearchResult>? {
+        return client
+            .get(
+                Search(
+                    facets = "[[\"project_types:mod\"],[\"categories:$loader\"],[\"game_versions:$gameVersion\"]${if (excludeLoader != null) ",[\"categories!=$excludeLoader\"]" else ""}]",
+                    index = "downloads",
+                    limit = limit,
+                    offset = offset
+                )
+            )
+            .takeIf { it.status.isSuccess() }
+            ?.body<MRSearchResults>()
+            ?.hits
+            ?.onEach { cacheProject(it.toMRProject()) }
+            ?.map { ProjectSearchResult(it.projectId, it.slug, it.versionId) }
+    }
+
+    private suspend fun cacheProject(project: MRProject) {
+        val cmd = redis.coroutines()
+
+        val slugKey = "modrinth:slug:${project.slug}"
+        if (cmd.exists(slugKey) != 1L) {
+            cmd.set(slugKey, project.id)
+        }
+
+        val key = "modrinth:project:${project.id}"
+        if (cmd.exists(key) != 1L) {
+            cmd.set(key, Json.encodeToString(project))
+        }
+    }
+
+    private suspend fun resolveProjectInternal(project: String, gameVersion: String, allowedVersions: List<String>, fallbackLoader: Boolean): ResolvedProject? {
+        val ver = getOrComputeVersion(project, gameVersion, allowedVersions, LOADER_FABRIC, fallbackLoader) ?: return null
 
         val deps: List<ResolvedProject> = channelFlow {
             ver.dependencies.forEach { dep ->
                 launch {
-                    send(resolveProjectInternal(dep, gameVersion, true) ?: throw RuntimeException("Failed to resolve dependent project $dep"))
+                    send(resolveProjectInternal(dep, gameVersion, allowedVersions, true) ?: throw RuntimeException("Failed to resolve dependent project $dep"))
                 }
             }
         }.toList()
@@ -197,18 +282,22 @@ class ModrinthService(
     }
 
     override suspend fun resolveProjectVersion(slug: String, gameVersion: String, loader: String): ProjectVersion? =
-        getOrComputeVersion(slug, gameVersion, loader, false)
+        getOrComputeVersion(slug, gameVersion, listOf(gameVersion), loader, false)
 
-    private suspend fun getOrComputeVersion(project: String, gameVersion: String, loader: String, fallbackLoader: Boolean): MRResolvedVersion? {
+    private suspend fun getOrComputeVersion(projectId: String, gameVersion: String, allowedVersions: List<String>, loader: String, fallbackLoader: Boolean): MRResolvedVersion? {
+        if (projectId.length != 8) {
+            throw IllegalArgumentException("Invalid Project ID: $projectId")
+        }
+
         val cmd = redis.coroutines()
-        val key = "modrinth:project:$project:$gameVersion"
+        val key = "modrinth:project:$projectId:$gameVersion"
         val data = cmd.get(key)
 
         if (data == null) {
-            LOGGER.info("Fetching version for project $project")
+            LOGGER.info("Fetching version for project $projectId")
 
-            val ver = computeProjectVersion(project, gameVersion, if (fallbackLoader) LOADER_NEOFORGE else loader)
-                ?: (if (fallbackLoader && loader != LOADER_NEOFORGE) computeProjectVersion(project, gameVersion, loader) else null)
+            val ver = computeProjectVersion(projectId, allowedVersions, if (fallbackLoader) LOADER_NEOFORGE else loader)
+                ?: (if (fallbackLoader && loader != LOADER_NEOFORGE) computeProjectVersion(projectId, allowedVersions, loader) else null)
                 ?: return null
 
             val res = computeVersionFile(ver)
@@ -220,24 +309,27 @@ class ModrinthService(
 
         val parsed = Json.decodeFromString<MRResolvedVersion>(data)
         // Validate file
-        val path = parsed.getFilePath()
+        val path = storagePath / parsed.path
         if (!path.exists()) {
             cmd.del(key)
-            return getOrComputeVersion(project, gameVersion, loader, fallbackLoader)
+            return getOrComputeVersion(projectId, gameVersion, allowedVersions, loader, fallbackLoader)
         }
         return parsed
     }
 
-    private suspend fun computeProjectVersion(project: String, gameVersion: String, loader: String): MRVersion? =
+    private suspend fun computeProjectVersion(projectId: String, gameVersions: List<String>, loader: String): MRVersion? =
         client.get(
             Projects.Id.Version(
-                Projects.Id(id = project),
+                Projects.Id(id = projectId),
                 loaders = "[\"${loader}\"]",
-                loader_fields = "{\"game_versions\":[\"${gameVersion}\"]}"
+                loader_fields = "{\"game_versions\":[${gameVersions.joinToString(separator = ",") { "\"$it\"" }}]}"
             )
         )
             .body<List<MRVersion>>()
-            .firstOrNull()
+            .minByOrNull {
+                val fileGameVersions = it.gameVersions.sortedBy(gameVersions::indexOf)
+                gameVersions.indexOf(fileGameVersions.first())
+            }
 
     private suspend fun findProjectVersion(id: String): MRVersion? =
         client.get(Versions.Id(id = id))
@@ -245,11 +337,10 @@ class ModrinthService(
 
     private suspend fun computeVersionFile(version: MRVersion): MRResolvedVersion {
         val file = version.files.first()
+        val project = getProject(version.projectId) ?: throw IllegalStateException("Project ${version.projectId} not found")
 
-        val basePath = getBaseStoragePath()
-        val projectFolder = basePath / version.projectId
-        val fileName = version.id + "-" + file.filename
-        val filePath = projectFolder / fileName
+        val basePath = storagePath
+        val filePath = basePath / "${project.slug}-${project.id}/${project.slug}-${version.id}.jar"
         val relativePath = basePath.relativize(filePath).toString()
         val dependencies = version.dependencies
             .filter { it.dependencyType == REQUIRED_DEP && it.projectId != FAPI_ID }

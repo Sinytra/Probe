@@ -80,7 +80,7 @@ fun Application.configureRouting(platforms: GlobalPlatformService, transformatio
                 if (ifNeoForge) {
                     return@post call.respond(SkippedResponseBody(
                         project.slug,
-                        project.iconUrl,
+                        project.iconUrl ?: "",
                         project.url,
                         gameVersion,
                         ResultType.NATIVE
@@ -101,7 +101,7 @@ fun Application.configureRouting(platforms: GlobalPlatformService, transformatio
 
                 val response = TestResponseBody(
                     result.modid,
-                    project.iconUrl,
+                    project.iconUrl ?: "",
                     project.url,
                     version?.versionNumber ?: "unknown",
                     result.gameVersion,

@@ -22,7 +22,7 @@ data class TransformationResult(
 )
 
 @Serializable
-private data class TransformLibOutput(
+data class TransformLibOutput(
     val success: Boolean,
     val primaryModid: String
 ) 

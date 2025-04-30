@@ -16,4 +16,4 @@ rootProject.name = "Probe"
 
 include("core")
 include("discord")
-include("game")
+include("gatherer")
