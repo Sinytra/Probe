@@ -1,0 +1,38 @@
+name: Perform tests
+
+on:
+  workflow_dispatch: 
+
+jobs:
+  build_test:
+    runs-on: ubuntu-latest
+    
+    services:
+      redis:
+        image: redis
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        volumes:
+          - /probe/dump.rdb:/data/dump.rdb
+
+    steps:
+      - run: apt update && apt install redis-tools -y
+      - run: redis-cli config get dir
+      - uses: tespkg/actions-cache@v1
+        with:
+          accessKey: ${{ secrets.S3_ACCESS_KEY }}
+          secretKey: ${{ secrets.S3_SECRET_KEY }}
+          bucket: ${{ secrets.S3_BUCKET_NAME }}
+          use-fallback: false
+
+          # actions/cache compatible properties: https://github.com/actions/cache
+          key: ${{ runner.os }}-mods-${{ hashFiles('/probe/candidates.json') }}
+          path: |
+            /probe/candidates.json
+            /probe/dump.rdb
+          restore-keys: |
+            ${{ runner.os }}-mods-
+      - run: redis-cli keys modrinth:version:*
