@@ -48,7 +48,7 @@ data class GathererParams(
     val gameVersion: String,
     val compatibleGameVersions: List<String>,
     val workDir: Path,
-    val maxTests: Int?
+    val tests: Int
 )
 
 fun runGatherer(params: GathererParams) {
@@ -68,7 +68,7 @@ fun runGatherer(params: GathererParams) {
 
     val modrinthService = ModrinthService(workDir / "mods", redisConnection)
 
-    val gatherer = BetterGatherer(workDir, setupService, modrinthService, redisConnection, params.gameVersion, params.compatibleGameVersions, params.maxTests)
+    val gatherer = BetterGatherer(workDir, setupService, modrinthService, redisConnection, params.gameVersion, params.compatibleGameVersions, params.tests)
     gatherer.run()
 }
 
@@ -79,8 +79,7 @@ class BetterGatherer(
     private val redisConnection: StatefulRedisConnection<String, String>,
     private val gameVersion: String,
     private val compatibleGameVersions: List<String>,
-    private val maxTestCount: Int?,
-    private val maxCount: Int = 1000
+    private val maxCount: Int
 ) {
 
     fun run() {
@@ -99,7 +98,7 @@ class BetterGatherer(
 
         // Run tests
         runBlocking {
-            val testCandidates = maxTestCount?.let(candidates::take) ?: candidates
+            val testCandidates = candidates.filterNot { EXCLUDED_PROJECTS.contains(it.projectId) }.take(maxCount)
             val results = runTests(testCandidates, resolvedDeps, missingDeps)
             val compatible = results.count { it?.output?.success == true }
             val incompatible = results.count { it?.output?.success == false }
@@ -135,7 +134,7 @@ class BetterGatherer(
 
         val dispatcher = Dispatchers.IO.limitedParallelism(CONCURRENT_TESTS)
         val semaphore = Semaphore(CONCURRENT_TESTS)
-        val candidates = data.filterNot { EXCLUDED_PROJECTS.contains(it.projectId) }
+        val candidates = data
 
         return coroutineScope {
             val results = candidates.map { proj ->
@@ -310,11 +309,13 @@ class BetterGatherer(
         val fabricTasks = (0..9).map { i ->
             async(Dispatchers.IO) {
                 modrinth.searchProjects(batch, batchOffset + i * batch, gameVersion, LOADER_FABRIC, LOADER_NEOFORGE)
+                    ?.filterNot { EXCLUDED_PROJECTS.contains(it.projectId) }
             }
         }
         val neoTasks = (0..9).map { i ->
             async(Dispatchers.IO) {
                 modrinth.searchProjects(batch, batchOffset + i * batch, gameVersion, LOADER_NEOFORGE, null)
+                    ?.filterNot { EXCLUDED_PROJECTS.contains(it.projectId) }
             }
         }
         val fabricResults = fabricTasks.awaitAll().filterNotNull().map(::processResults)

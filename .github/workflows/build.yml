@@ -20,7 +20,6 @@ jobs:
           - 6379:6379
 
     steps:
-      - run: sudo apt install redis-tools -y
       - uses: tespkg/actions-cache@v1
         with:
           accessKey: ${{ secrets.S3_ACCESS_KEY }}
@@ -28,7 +27,6 @@ jobs:
           bucket: ${{ secrets.S3_BUCKET_NAME }}
           use-fallback: false
 
-          # actions/cache compatible properties: https://github.com/actions/cache
           key: ${{ runner.os }}-mods-${{ hashFiles('probe/candidates.json') }}
           path: |
             probe/candidates.json
@@ -40,4 +38,3 @@ jobs:
           docker stop probe_redis
           docker cp probe/dump.rdb probe_redis:/data/dump.rdb
           docker start probe_redis
-      - run: redis-cli KEYS '*'

@@ -48,9 +48,9 @@ class GathererMain : Callable<Int> {
 
     @Option(names = ["--work-dir"], scope = CommandLine.ScopeType.INHERIT, description = ["Where temporary working directories are stored."], required = true)
     var workDir: Path? = null
-    
-    @Option(names = ["--max-tests"], scope = CommandLine.ScopeType.INHERIT, description = ["Specifies max tests performed"])
-    var maxTests: Int? = null
+
+    @Option(names = ["--tests"], scope = CommandLine.ScopeType.INHERIT, defaultValue = "\${TEST_COUNT:-1000}", description = ["Specifies number of tests performed"])
+    var tests: Int? = null
 
     init {
         LOGGER.info("Running Probe Transformer version {}", getVersion())
@@ -67,7 +67,7 @@ class GathererMain : Callable<Int> {
             gameVersion!!,
             compatibleGameVersions,
             workDir!!,
-            maxTests
+            tests!!
         )
         runGatherer(params)
         return 0

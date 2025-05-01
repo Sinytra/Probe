@@ -70,14 +70,13 @@ jib {
     container {
         val transformerVersion = libs.connector.tranformer.get().version!!
 
-        mainClass = "org.sinytra.probe.gatherer.GathererMainKt"
+        mainClass = "org.sinytra.probe.gatherer.RunnerEntrypointKt"
         args = listOf(
             "--nfrt-version", nfrtVersion,
             "--neoforge-version", neoForgeVersion,
             "--toolchain-version", transformerVersion,
             "--game-version", gameVersion,
-            "--work-dir", "/probe",
-            "--max-tests", "10"
+            "--work-dir", "/probe"
         ) + compatibleGameVersions
             .split(",")
             .flatMap { listOf("--compatible-version", it) } + "run"
