@@ -10,6 +10,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.io.path.Path
 import kotlin.io.path.absolutePathString
 import kotlin.io.path.createDirectories
+import kotlin.io.path.createParentDirectories
 import kotlin.io.path.div
 import kotlin.io.path.exists
 
@@ -85,6 +86,7 @@ class SetupService(
         }
 
         val outputFile = baseDir / "transformer-$transformerVersion-all.jar"
+        outputFile.createParentDirectories()
 
         val transformerUrl = getMavenUrl(SINYTRA_MAVEN, "org.sinytra.connector", "transformer", transformerVersion, "all")
         downloadFile(transformerUrl, outputFile)

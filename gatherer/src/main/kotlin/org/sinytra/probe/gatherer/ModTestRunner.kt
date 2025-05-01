@@ -54,7 +54,7 @@ data class GathererParams(
 fun runGatherer(params: GathererParams) {
     val workDir = params.workDir
     val setupService = SetupService(
-        workDir / ".setup",
+        (workDir / ".setup").also { it.createDirectories() },
         true,
         params.nfrtVersion,
         params.neoForgeVersion,
@@ -94,7 +94,10 @@ class BetterGatherer(
 
         val resolvedDeps = downloadDependencies(missingDeps)
         LOGGER.info("Resolved {} additional dependencies", resolvedDeps.size)
-        LOGGER.info("{} Failed to resolve {} dependencies", ICON_WARN, missingDeps.size - resolvedDeps.size)
+        val unresolved = missingDeps.size - resolvedDeps.size
+        if (unresolved > 0) {
+            LOGGER.info("{} Failed to resolve {} dependencies", ICON_WARN, unresolved)
+        }
 
         // Run tests
         runBlocking {

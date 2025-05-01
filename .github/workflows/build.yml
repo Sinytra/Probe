@@ -19,7 +19,12 @@ jobs:
         ports:
           - 6379:6379
 
+    permissions:
+      packages: read
+
     steps:
+      - name: Setup env
+        run: mkdir probe
       - uses: tespkg/actions-cache@v1
         with:
           accessKey: ${{ secrets.S3_ACCESS_KEY }}
@@ -29,6 +34,8 @@ jobs:
 
           key: ${{ runner.os }}-mods-${{ hashFiles('probe/candidates.json') }}
           path: |
+            probe/.setup
+            probe/mods
             probe/candidates.json
             probe/dump.rdb
           restore-keys: |
@@ -38,3 +45,17 @@ jobs:
           docker stop probe_redis
           docker cp probe/dump.rdb probe_redis:/data/dump.rdb
           docker start probe_redis
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run tests in a container
+        run: >
+          docker run --rm
+          --network host
+          -v ./probe:/probe
+          -e REDIS_URL=redis://localhost:6379/0
+          -e TEST_COUNT=20
+          ghcr.io/sinytra/probe/gatherer:latest
