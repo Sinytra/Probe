@@ -69,6 +69,10 @@ fun runGatherer(params: GathererParams) {
     val modrinthService = ModrinthService(workDir / "mods", redisConnection)
 
     val gatherer = BetterGatherer(workDir, setupService, modrinthService, redisConnection, params.gameVersion, params.compatibleGameVersions, params.tests)
+
+    setupService.getTransformLibPath()
+    setupService.installDependencies()
+
     gatherer.run()
 }
 

@@ -57,5 +57,9 @@ jobs:
           --network host
           -v ./probe:/probe
           -e REDIS_URL=redis://localhost:6379/0
-          -e TEST_COUNT=20
+          -e TEST_COUNT=200
           ghcr.io/sinytra/probe/gatherer:latest
+      - name: Backup redis data
+        run: |
+          docker stop probe_redis
+          docker cp probe_redis:/data/dump.rdb probe/dump.rdb

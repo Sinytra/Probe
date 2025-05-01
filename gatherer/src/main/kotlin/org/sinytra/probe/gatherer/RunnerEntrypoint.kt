@@ -26,7 +26,7 @@ class GathererMain : Callable<Int> {
         val LOGGER: Logger = LoggerFactory.getLogger(GathererMain::class.java)
 
         private fun getVersion(): String {
-            val ver = GathererMain::class.java.getPackage().implementationVersion
+            val ver = GathererMain::class.java.getPackage().implementationVersion ?: System.getProperty("org.sinytra.probe.version")
             return ver ?: "(unknown)"
         }
     }

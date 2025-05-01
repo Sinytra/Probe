@@ -71,6 +71,9 @@ jib {
         val transformerVersion = libs.connector.tranformer.get().version!!
 
         mainClass = "org.sinytra.probe.gatherer.RunnerEntrypointKt"
+        jvmFlags = listOf(
+            "-Dorg.sinytra.probe.version=$version"
+        )
         args = listOf(
             "--nfrt-version", nfrtVersion,
             "--neoforge-version", neoForgeVersion,
