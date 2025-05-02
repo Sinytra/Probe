@@ -82,8 +82,7 @@ jib {
             "--neoforge-version", neoForgeVersion,
             "--toolchain-version", transformerVersion,
             "--game-version", gameVersion,
-            "--work-dir", "/probe",
-            "--write-report", "true",
+            "--work-dir", "/probe"
         ) + compatibleGameVersions
             .split(",")
             .flatMap { listOf("--compatible-version", it) }
