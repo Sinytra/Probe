@@ -36,4 +36,4 @@ jobs:
         env:
           DOCKER_REG_USERNAME: ${{ github.actor }}
           DOCKER_REG_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
-        run: ./gradlew jib
+        run: ./gradlew :gatherer:jib
