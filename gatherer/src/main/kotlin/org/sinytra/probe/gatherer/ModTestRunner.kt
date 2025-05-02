@@ -23,20 +23,24 @@ import java.nio.file.Path
 import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.io.path.*
+import kotlin.time.DurationUnit
 import kotlin.time.measureTime
+import kotlin.time.measureTimedValue
+import kotlin.time.toDuration
 
 private val LOGGER: Logger = LoggerFactory.getLogger("BetterGatherer")
 
-private const val ICON_RECYCLE = "\u267B\uFE0F"
-private const val ICON_PACKAGE = "\uD83D\uDCE6"
-private const val ICON_DOWNLOAD = "\u2B07\uFE0F"
-private const val ICON_MAG_GLASS = "\uD83D\uDD0D"
-private const val ICON_TRASH = "\uD83D\uDDD1"
-private const val ICON_CHECK = "\u2705"
-private const val ICON_X = "\u274C"
-private const val ICON_WARN = "\u26A0\uFE0F"
-private const val ICON_TEST = "\uD83E\uDDEA"
-private const val ICON_EXCLAMATION = "\u2757"
+internal const val ICON_RECYCLE = "\u267B\uFE0F"
+internal const val ICON_PACKAGE = "\uD83D\uDCE6"
+internal const val ICON_DOWNLOAD = "\u2B07\uFE0F"
+internal const val ICON_MAG_GLASS = "\uD83D\uDD0D"
+internal const val ICON_TRASH = "\uD83D\uDDD1"
+internal const val ICON_CHECK = "\u2705"
+internal const val ICON_X = "\u274C"
+internal const val ICON_WARN = "\u26A0\uFE0F"
+internal const val ICON_TEST = "\uD83E\uDDEA"
+internal const val ICON_EXCLAMATION = "\u2757"
+internal const val ICON_CLOCK = "\u23F0"
 private val EXCLUDED_PROJECTS = listOf("P7dR8mSH", "Aqlf1Shp")
 
 data class GathererParams(
@@ -49,7 +53,8 @@ data class GathererParams(
     val tests: Int,
     val cleanupOutput: Boolean,
     val concurrentDownloads: Int,
-    val concurrentTests: Int
+    val concurrentTests: Int,
+    val writeReport: Boolean
 )
 
 fun runGatherer(params: GathererParams) {
@@ -74,12 +79,7 @@ fun runGatherer(params: GathererParams) {
         setupService,
         modrinthService,
         redisConnection,
-        params.gameVersion,
-        params.compatibleGameVersions,
-        params.tests,
-        params.cleanupOutput,
-        params.concurrentDownloads,
-        params.concurrentTests
+        params
     )
 
     setupService.getTransformLibPath()
@@ -93,13 +93,15 @@ class BetterGatherer(
     private val setup: SetupService,
     private val modrinth: ModrinthService,
     private val redisConnection: StatefulRedisConnection<String, String>,
-    private val gameVersion: String,
-    private val compatibleGameVersions: List<String>,
-    private val maxCount: Int,
-    private val cleanupOutput: Boolean,
-    val concurrentDownloads: Int,
-    val concurrentTests: Int
+    private val params: GathererParams
 ) {
+    private val gameVersion: String = params.gameVersion
+    private val compatibleGameVersions: List<String> = params.compatibleGameVersions
+    private val maxCount: Int = params.tests
+    private val cleanupOutput: Boolean = params.cleanupOutput
+    val concurrentDownloads: Int = params.concurrentDownloads
+    val concurrentTests: Int = params.concurrentTests
+    val writeReport: Boolean = params.writeReport
 
     fun run() {
         // Read gathered projects
@@ -121,7 +123,7 @@ class BetterGatherer(
         // Run tests
         runBlocking {
             val testCandidates = candidates.filterNot { EXCLUDED_PROJECTS.contains(it.projectId) }.take(maxCount)
-            val results = runTests(testCandidates, resolvedDeps, missingDeps)
+            val (results, duration) = measureTimedValue { runTests(testCandidates, resolvedDeps, missingDeps) }
             val compatible = results.count { it.result?.output?.success == true }
             val incompatible = results.count { it.result?.output?.success == false }
             val errored = results.count { it.result?.errors == true }
@@ -136,6 +138,17 @@ class BetterGatherer(
 
             val resultsFile = gathererDir / "results.json"
             resultsFile.writeText(Json.encodeToString(results))
+
+            if (writeReport) {
+                val reportFile = gathererDir / "report.md"
+                val durationStr = if (duration < 1.toDuration(DurationUnit.SECONDS))
+                    duration.toString(DurationUnit.MILLISECONDS)
+                else if (duration < 1.toDuration(DurationUnit.MINUTES))
+                    duration.toString(DurationUnit.SECONDS, 3)
+                else
+                    duration.toString(DurationUnit.MINUTES, 2)
+                writeReport(reportFile, results, durationStr, params)
+            }
         }
     }
 
@@ -180,7 +193,7 @@ class BetterGatherer(
                         if (depsFiles.any { missingDeps.contains(it.version.projectId) }) {
                             LOGGER.error("Skipping test for ${proj.slug} due to missing deps")
                             completeTest()
-                            return@withPermit SerializableTransformResult(proj, null)
+                            return@withPermit SerializableTransformResult(proj, version.versionNumber, null)
                         }
                         val depsPaths = depsFiles.map { modsDir / it.version.path }
                         depsPaths.firstOrNull { it.notExists() }?.let { 
@@ -202,10 +215,10 @@ class BetterGatherer(
                             )
                             val output = result.output
                             LOGGER.info("{} Transformed project ${proj.slug}: ID ${output.primaryModid} Success: ${output.success}", if (output.success) "\u2705" else "\u274C")
-                            return@withPermit SerializableTransformResult(proj, result)
+                            return@withPermit SerializableTransformResult(proj, version.versionNumber, result)
                         } catch (e: Exception) {
                             LOGGER.error("Error during transforming ${proj.slug}", e)
-                            return@withPermit SerializableTransformResult(proj, null)
+                            return@withPermit SerializableTransformResult(proj, version.versionNumber, null)
                         } finally {
                             completeTest() 
                         }
@@ -455,5 +468,5 @@ class BetterGatherer(
     data class TransformResult(val output: TransformLibOutput, val errors: Boolean)
 
     @Serializable
-    data class SerializableTransformResult(val project: ProjectSearchResult, val result: TransformResult?)
+    data class SerializableTransformResult(val project: ProjectSearchResult, val versionNumber: String, val result: TransformResult?)
 }

@@ -58,6 +58,9 @@ class GathererMain : Callable<Int> {
     @Option(names = ["--test-jobs"], scope = CommandLine.ScopeType.INHERIT, defaultValue = "\${TEST_JOBS:-10}", description = ["Max parallel tests"])
     var concurrentTests: Int? = null
 
+    @Option(names = ["--write-report"], scope = CommandLine.ScopeType.INHERIT, defaultValue = "\${ENABLE_TEST_REPORT:-true}", description = ["Write markdown test report"])
+    var writeReport: Boolean? = null
+
     init {
         LOGGER.info("Running Probe Transformer version {}", getVersion())
     }
@@ -78,6 +81,7 @@ class GathererMain : Callable<Int> {
             cleanupOutput,
             concurrentDownloads!!,
             concurrentTests!!,
+            writeReport!!
         )
         runGatherer(params)
         return 0

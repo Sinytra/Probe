@@ -1,10 +1,15 @@
 name: Perform tests
 
 on:
-  workflow_dispatch: 
+  workflow_dispatch:
+    inputs:
+      test_count:
+        type: number
+        default: 1000
+        description: Number of mods to test
 
 env:
-  TEST_COUNT: 100
+  TEST_COUNT: ${{ inputs.test_count || '1000' }}
   GATHERER_IMG: ghcr.io/sinytra/probe/gatherer:latest
 
 jobs:
@@ -77,6 +82,10 @@ jobs:
         run: |
           docker stop probe_redis
           docker cp probe_redis:/data/dump.rdb probe/dump.rdb
+
+      - name: Upload report
+        if: ${{ hashFiles('probe/report.md') != '' }}
+        run: cat probe/report.md >> $GITHUB_STEP_SUMMARY
 
       - name: Upload test results
         uses: actions/upload-artifact@v4

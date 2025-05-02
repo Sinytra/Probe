@@ -19,6 +19,12 @@ val transfomer: Configuration by configurations.creating
 
 repositories {
     mavenCentral()
+    maven {
+        url = uri("https://jitpack.io")
+        content { 
+            includeGroup("com.github.Steppschuh")
+        }
+    }
 }
 
 dependencies {
@@ -47,6 +53,7 @@ dependencies {
     implementation(libs.ktor.client.logging)
     implementation(libs.ktor.client.resources)
 
+    implementation("com.github.Steppschuh:Java-Markdown-Generator:1.3.2")
     implementation("info.picocli:picocli:4.7.7")
     annotationProcessor("info.picocli:picocli-codegen:4.7.7")
 }
@@ -75,9 +82,10 @@ jib {
             "--neoforge-version", neoForgeVersion,
             "--toolchain-version", transformerVersion,
             "--game-version", gameVersion,
-            "--work-dir", "/probe"
+            "--work-dir", "/probe",
+            "--write-report", "true",
         ) + compatibleGameVersions
             .split(",")
-            .flatMap { listOf("--compatible-version", it) } + "run"
+            .flatMap { listOf("--compatible-version", it) }
     }
 }
