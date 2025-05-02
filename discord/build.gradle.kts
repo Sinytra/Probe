@@ -26,12 +26,12 @@ tasks.test {
 }
 
 kotlin {
-    jvmToolchain(23)
+    jvmToolchain(21)
 }
 
 jib {
     from {
-        image = "eclipse-temurin:23-jre"
+        image = "eclipse-temurin:21-jre"
     }
     to {
         image = "ghcr.io/sinytra/probe/discord"
