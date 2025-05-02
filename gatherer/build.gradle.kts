@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.plugin.serialization)
     alias(libs.plugins.jib)
 }
 
@@ -60,7 +61,7 @@ jib {
         image = "eclipse-temurin:21-jdk"
     }
     to {
-        image = "sinytra/probe/gatherer"
+        setImage(providers.environmentVariable("IMAGE").orElse("sinytra/probe/gatherer"))
         tags = setOf("latest", version.toString())
         auth { 
             setUsername(providers.environmentVariable("DOCKER_REG_USERNAME"))
@@ -70,14 +71,16 @@ jib {
     container {
         val transformerVersion = libs.connector.tranformer.get().version!!
 
-        mainClass = "org.sinytra.probe.gatherer.GathererMainKt"
+        mainClass = "org.sinytra.probe.gatherer.RunnerEntrypointKt"
+        jvmFlags = listOf(
+            "-Dorg.sinytra.probe.version=$version"
+        )
         args = listOf(
             "--nfrt-version", nfrtVersion,
             "--neoforge-version", neoForgeVersion,
             "--toolchain-version", transformerVersion,
             "--game-version", gameVersion,
-            "--work-dir", "/probe",
-            "--max-tests", "10"
+            "--work-dir", "/probe"
         ) + compatibleGameVersions
             .split(",")
             .flatMap { listOf("--compatible-version", it) } + "run"

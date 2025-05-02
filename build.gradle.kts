@@ -1,6 +1,6 @@
 plugins {
     alias(libs.plugins.kotlin.jvm)
-    id("net.neoforged.gradleutils") version "3.0.0"
+    alias(libs.plugins.gradleutils)
 }
 
 group = "org.sinytra.probe"
