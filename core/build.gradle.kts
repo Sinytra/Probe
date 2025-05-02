@@ -49,11 +49,6 @@ ktor {
 
 repositories {
     mavenCentral()
-    mavenLocal {
-        content {
-            includeGroup("org.sinytra.connector")
-        }
-    }
 }
 
 afterEvaluate {

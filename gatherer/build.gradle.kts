@@ -19,11 +19,6 @@ val transfomer: Configuration by configurations.creating
 
 repositories {
     mavenCentral()
-    mavenLocal {
-        content {
-            includeGroup("org.sinytra.connector")
-        }
-    }
 }
 
 dependencies {

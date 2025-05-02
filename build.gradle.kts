@@ -13,6 +13,16 @@ if (!CI.isPresent) {
 
 allprojects {
     version = rootProject.version
+    
+    repositories {
+        maven {
+            name = "Sinytra"
+            url = uri("https://maven.sinytra.org")
+            content {
+                includeGroupAndSubgroups("org.sinytra")
+            }
+        }
+    }
 }
 
 repositories {
