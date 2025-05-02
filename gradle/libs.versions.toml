@@ -11,6 +11,7 @@ kord-version = "0.15.0"
 transformer-version = "2.0.0-beta.8+1.21.1+dev-g6a64924"
 kotlinx-hocon-version = "1.8.1"
 jib-version = "3.4.5"
+gradleutils-version = "3.0.0"
 
 [libraries]
 ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor-version" }
@@ -44,3 +45,4 @@ kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin-version" }
 ktor = { id = "io.ktor.plugin", version.ref = "ktor-version" }
 kotlin-plugin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin-version" }
 jib = { id = "com.google.cloud.tools.jib", version.ref = "jib-version" }
+gradleutils = { id = "net.neoforged.gradleutils", version.ref = "gradleutils-version" }

@@ -52,6 +52,12 @@ class GathererMain : Callable<Int> {
     @Option(names = ["--tests"], scope = CommandLine.ScopeType.INHERIT, defaultValue = "\${TEST_COUNT:-1000}", description = ["Specifies number of tests performed"])
     var tests: Int? = null
 
+    @Option(names = ["--download-jobs"], scope = CommandLine.ScopeType.INHERIT, defaultValue = "\${DOWNLOAD_JOBS:-20}", description = ["Max parallel downloads"])
+    var concurrentDownloads: Int? = null
+
+    @Option(names = ["--test-jobs"], scope = CommandLine.ScopeType.INHERIT, defaultValue = "\${TEST_JOBS:-10}", description = ["Max parallel tests"])
+    var concurrentTests: Int? = null
+
     init {
         LOGGER.info("Running Probe Transformer version {}", getVersion())
     }
@@ -60,6 +66,7 @@ class GathererMain : Callable<Int> {
         if (!workDir!!.exists()) {
             workDir!!.createDirectories()
         }
+        val cleanupOutput = System.getenv("CLEANUP_OUTPUT") == "true"
         val params = GathererParams(
             nfrtVersion!!,
             neoForgeVersion!!,
@@ -67,7 +74,10 @@ class GathererMain : Callable<Int> {
             gameVersion!!,
             compatibleGameVersions,
             workDir!!,
-            tests!!
+            tests!!,
+            cleanupOutput,
+            concurrentDownloads!!,
+            concurrentTests!!,
         )
         runGatherer(params)
         return 0

@@ -37,8 +37,6 @@ private const val ICON_X = "\u274C"
 private const val ICON_WARN = "\u26A0\uFE0F"
 private const val ICON_TEST = "\uD83E\uDDEA"
 private const val ICON_EXCLAMATION = "\u2757"
-private const val CONCURRENT_DOWNLOADS = 20
-private const val CONCURRENT_TESTS = 10
 private val EXCLUDED_PROJECTS = listOf("P7dR8mSH", "Aqlf1Shp")
 
 data class GathererParams(
@@ -48,7 +46,10 @@ data class GathererParams(
     val gameVersion: String,
     val compatibleGameVersions: List<String>,
     val workDir: Path,
-    val tests: Int
+    val tests: Int,
+    val cleanupOutput: Boolean,
+    val concurrentDownloads: Int,
+    val concurrentTests: Int
 )
 
 fun runGatherer(params: GathererParams) {
@@ -68,7 +69,18 @@ fun runGatherer(params: GathererParams) {
 
     val modrinthService = ModrinthService(workDir / "mods", redisConnection)
 
-    val gatherer = BetterGatherer(workDir, setupService, modrinthService, redisConnection, params.gameVersion, params.compatibleGameVersions, params.tests)
+    val gatherer = BetterGatherer(
+        workDir,
+        setupService,
+        modrinthService,
+        redisConnection,
+        params.gameVersion,
+        params.compatibleGameVersions,
+        params.tests,
+        params.cleanupOutput,
+        params.concurrentDownloads,
+        params.concurrentTests
+    )
 
     setupService.getTransformLibPath()
     setupService.installDependencies()
@@ -83,7 +95,10 @@ class BetterGatherer(
     private val redisConnection: StatefulRedisConnection<String, String>,
     private val gameVersion: String,
     private val compatibleGameVersions: List<String>,
-    private val maxCount: Int
+    private val maxCount: Int,
+    private val cleanupOutput: Boolean,
+    val concurrentDownloads: Int,
+    val concurrentTests: Int
 ) {
 
     fun run() {
@@ -130,7 +145,7 @@ class BetterGatherer(
         }
     }
 
-    private suspend fun runTests(data: List<ProjectSearchResult>, dependencies: List<ResolvedProject>, missingDeps: List<String>): List<SerializableTransformResult> {
+    private suspend fun runTests(candidates: List<ProjectSearchResult>, dependencies: List<ResolvedProject>, missingDeps: List<String>): List<SerializableTransformResult> {
         val transformerPath = setup.getTransformLibPath()
         val gameFiles = setup.installDependencies()
 
@@ -142,10 +157,16 @@ class BetterGatherer(
                 .filterNot { d -> EXCLUDED_PROJECTS.contains(d.version.projectId) }
         }
 
-        val dispatcher = Dispatchers.IO.limitedParallelism(CONCURRENT_TESTS)
-        val semaphore = Semaphore(CONCURRENT_TESTS)
-        val candidates = data
+        val dispatcher = Dispatchers.IO.limitedParallelism(concurrentTests)
+        val semaphore = Semaphore(concurrentTests)
         val retakeTests = System.getenv("FORCE_RETAKE_TESTS") == "true"
+        if (retakeTests) {
+            LOGGER.warn("Retaking tests is enabled, previous results will be ignored")
+        }
+
+        val mutex = Mutex()
+        var done = 0
+        val completeTest: suspend () -> Unit = { mutex.withLock { LOGGER.info("Test progress: [{} / {}] completed", ++done, candidates.size) } }
 
         return coroutineScope {
             val results = candidates.map { proj ->
@@ -158,6 +179,7 @@ class BetterGatherer(
                         val depsFiles = depsMap[proj.projectId] ?: emptyList()
                         if (depsFiles.any { missingDeps.contains(it.version.projectId) }) {
                             LOGGER.error("Skipping test for ${proj.slug} due to missing deps")
+                            completeTest()
                             return@withPermit SerializableTransformResult(proj, null)
                         }
                         val depsPaths = depsFiles.map { modsDir / it.version.path }
@@ -184,6 +206,8 @@ class BetterGatherer(
                         } catch (e: Exception) {
                             LOGGER.error("Error during transforming ${proj.slug}", e)
                             return@withPermit SerializableTransformResult(proj, null)
+                        } finally {
+                            completeTest() 
                         }
                     }
                 }
@@ -197,8 +221,8 @@ class BetterGatherer(
             LOGGER.info("{} Downloading {} additional dependencies", ICON_PACKAGE, deps.size)
         }
 
-        val dispatcher = Dispatchers.IO.limitedParallelism(CONCURRENT_DOWNLOADS)
-        val semaphore = Semaphore(CONCURRENT_DOWNLOADS)
+        val dispatcher = Dispatchers.IO.limitedParallelism(concurrentDownloads)
+        val semaphore = Semaphore(concurrentDownloads)
 
         return runBlocking {
             val results: List<Deferred<ResolvedProject?>> = deps.map {
@@ -222,11 +246,11 @@ class BetterGatherer(
     }
 
     private fun downloadCandidateMods(candidates: List<ProjectSearchResult>): Map<String, List<String>> {
-        val dispatcher = Dispatchers.IO.limitedParallelism(CONCURRENT_DOWNLOADS)
+        val dispatcher = Dispatchers.IO.limitedParallelism(concurrentDownloads)
         val mutex = Mutex()
         var done = 0
 
-        val semaphore = Semaphore(CONCURRENT_DOWNLOADS)
+        val semaphore = Semaphore(concurrentDownloads)
         val dependencies = Collections.synchronizedMap<String, List<String>>(mutableMapOf())
         try {
             runBlocking {
@@ -383,7 +407,7 @@ class BetterGatherer(
         val classPathArgs = classPath.flatMap { listOf("--classpath", it.absolutePathString()) }
     
         val output = workDir / "output.json"
-        var errors: Boolean = false
+        var errors = false
         if (!output.exists()) {
             LOGGER.info("{} Testing {}", ICON_TEST, slug)
             val outputLog = workDir / "output.txt"
@@ -405,11 +429,18 @@ class BetterGatherer(
             }
     
             if (process.exitValue() != 0) {
+                if (cleanupOutput) {
+                    workDir.deleteRecursively()
+                }
                 throw IllegalStateException("Failed to run transformations, see log for details")
             }
         }
     
         val parsed: TransformLibOutput = output.inputStream().use(Json::decodeFromStream)
+        
+        if (cleanupOutput) {
+            workDir.deleteRecursively()
+        }
     
         return TransformResult(parsed, errors)
     }
