@@ -35,7 +35,7 @@ ktor {
     docker {
         customBaseImage = "eclipse-temurin:21-jdk" // JDK is required for NFRT
         localImageName.set("sinytra/probe/core")
-        imageTag.set(version as String)
+        imageTag.set(version.toString())
         externalRegistry.set(
             io.ktor.plugin.features.DockerImageRegistry.externalRegistry(
                 username = providers.environmentVariable("DOCKER_REG_USERNAME"),
