@@ -12,6 +12,7 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import org.sinytra.probe.TransformLibOutput
@@ -38,7 +39,6 @@ private const val ICON_TEST = "\uD83E\uDDEA"
 private const val ICON_EXCLAMATION = "\u2757"
 private const val CONCURRENT_DOWNLOADS = 20
 private const val CONCURRENT_TESTS = 10
-private const val FORCE_RETAKE_TESTS = true
 private val EXCLUDED_PROJECTS = listOf("P7dR8mSH", "Aqlf1Shp")
 
 data class GathererParams(
@@ -107,10 +107,10 @@ class BetterGatherer(
         runBlocking {
             val testCandidates = candidates.filterNot { EXCLUDED_PROJECTS.contains(it.projectId) }.take(maxCount)
             val results = runTests(testCandidates, resolvedDeps, missingDeps)
-            val compatible = results.count { it?.output?.success == true }
-            val incompatible = results.count { it?.output?.success == false }
-            val errored = results.count { it?.errors == true }
-            val failed = results.count { it == null }
+            val compatible = results.count { it.result?.output?.success == true }
+            val incompatible = results.count { it.result?.output?.success == false }
+            val errored = results.count { it.result?.errors == true }
+            val failed = results.count { it.result == null }
 
             LOGGER.info("==== Test results summary ====")
             LOGGER.info("{} Compatible:\t\t\t{}", ICON_CHECK, compatible)
@@ -118,6 +118,9 @@ class BetterGatherer(
             LOGGER.info("{} Errored:\t\t\t\t{}", ICON_WARN, errored)
             LOGGER.info("{} Failed:\t\t\t\t{}", ICON_EXCLAMATION, failed)
             LOGGER.info("==============================")
+
+            val resultsFile = gathererDir / "results.json"
+            resultsFile.writeText(Json.encodeToString(results))
         }
     }
 
@@ -127,7 +130,7 @@ class BetterGatherer(
         }
     }
 
-    private suspend fun runTests(data: List<ProjectSearchResult>, dependencies: List<ResolvedProject>, missingDeps: List<String>): List<TransformResult?> {
+    private suspend fun runTests(data: List<ProjectSearchResult>, dependencies: List<ResolvedProject>, missingDeps: List<String>): List<SerializableTransformResult> {
         val transformerPath = setup.getTransformLibPath()
         val gameFiles = setup.installDependencies()
 
@@ -142,6 +145,7 @@ class BetterGatherer(
         val dispatcher = Dispatchers.IO.limitedParallelism(CONCURRENT_TESTS)
         val semaphore = Semaphore(CONCURRENT_TESTS)
         val candidates = data
+        val retakeTests = System.getenv("FORCE_RETAKE_TESTS") == "true"
 
         return coroutineScope {
             val results = candidates.map { proj ->
@@ -154,7 +158,7 @@ class BetterGatherer(
                         val depsFiles = depsMap[proj.projectId] ?: emptyList()
                         if (depsFiles.any { missingDeps.contains(it.version.projectId) }) {
                             LOGGER.error("Skipping test for ${proj.slug} due to missing deps")
-                            return@withPermit null
+                            return@withPermit SerializableTransformResult(proj, null)
                         }
                         val depsPaths = depsFiles.map { modsDir / it.version.path }
                         depsPaths.firstOrNull { it.notExists() }?.let { 
@@ -166,7 +170,7 @@ class BetterGatherer(
                                 proj.slug,
                                 transformerPath,
                                 versionFile.parent.resolve("output").also {
-                                    if (FORCE_RETAKE_TESTS) it.deleteRecursively()
+                                    if (retakeTests) it.deleteRecursively()
                                     it.createDirectories()
                                 },
                                 listOf(versionFile) + depsPaths,
@@ -176,10 +180,10 @@ class BetterGatherer(
                             )
                             val output = result.output
                             LOGGER.info("{} Transformed project ${proj.slug}: ID ${output.primaryModid} Success: ${output.success}", if (output.success) "\u2705" else "\u274C")
-                            return@withPermit result
+                            return@withPermit SerializableTransformResult(proj, result)
                         } catch (e: Exception) {
                             LOGGER.error("Error during transforming ${proj.slug}", e)
-                            return@withPermit null
+                            return@withPermit SerializableTransformResult(proj, null)
                         }
                     }
                 }
@@ -379,7 +383,7 @@ class BetterGatherer(
         val classPathArgs = classPath.flatMap { listOf("--classpath", it.absolutePathString()) }
     
         val output = workDir / "output.json"
-        var errors: Boolean? = null
+        var errors: Boolean = false
         if (!output.exists()) {
             LOGGER.info("{} Testing {}", ICON_TEST, slug)
             val outputLog = workDir / "output.txt"
@@ -415,6 +419,10 @@ class BetterGatherer(
         val cleaned = file.readText().replace(ansiRegex, "")
         file.writeText(cleaned)
     }
-    
-    data class TransformResult(val output: TransformLibOutput, val errors: Boolean?)
+
+    @Serializable
+    data class TransformResult(val output: TransformLibOutput, val errors: Boolean)
+
+    @Serializable
+    data class SerializableTransformResult(val project: ProjectSearchResult, val result: TransformResult?)
 }
