@@ -61,7 +61,7 @@ jib {
         image = "eclipse-temurin:21-jdk"
     }
     to {
-        image = "ghcr.io/sinytra/probe/gatherer"
+        setImage(providers.environmentVariable("IMAGE").orElse("sinytra/probe/gatherer"))
         tags = setOf("latest", version.toString())
         auth { 
             setUsername(providers.environmentVariable("DOCKER_REG_USERNAME"))

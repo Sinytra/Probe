@@ -5,11 +5,13 @@ on:
 
 env:
   TEST_COUNT: 100
+  GATHERER_IMG: ghcr.io/sinytra/probe/gatherer:latest
 
 jobs:
   run_tests:
+    name: Run tests
     runs-on: ubuntu-latest
-    
+
     services:
       redis:
         image: redis
@@ -69,7 +71,7 @@ jobs:
           -e TEST_COUNT=${{ env.TEST_COUNT }}
           -e FORCE_RETAKE_TESTS=true
           -e CLEANUP_OUTPUT=true
-          ghcr.io/sinytra/probe/gatherer:latest
+          ${{ env.GATHERER_IMG }}
 
       - name: Backup redis data
         run: |
