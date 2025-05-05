@@ -22,4 +22,4 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Build
-        run: ./gradlew clean build publishToMavenLocal --stacktrace
+        run: ./gradlew clean build --stacktrace
