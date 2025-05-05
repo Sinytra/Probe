@@ -53,9 +53,9 @@ dependencies {
     implementation(libs.ktor.client.logging)
     implementation(libs.ktor.client.resources)
 
-    implementation("com.github.Steppschuh:Java-Markdown-Generator:1.3.2")
-    implementation("info.picocli:picocli:4.7.7")
-    annotationProcessor("info.picocli:picocli-codegen:4.7.7")
+    implementation(libs.markdown.generator)
+    implementation(libs.picocli)
+    annotationProcessor(libs.picocli.codegen)
 }
 
 jib {

@@ -1,9 +1,15 @@
-package org.sinytra.probe.model
+package org.sinytra.probe.core.model
 
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.deleteWhere
-import org.sinytra.probe.db.*
+import org.sinytra.probe.core.db.ModTable
+import org.sinytra.probe.core.db.ProjectDAO
+import org.sinytra.probe.core.db.ProjectTable
+import org.sinytra.probe.core.db.TestResultDAO
+import org.sinytra.probe.core.db.TestResultTable
+import org.sinytra.probe.core.db.daoToModel
+import org.sinytra.probe.core.db.suspendTransaction
 
 data class BaseTestResult(
     val project: Project,
@@ -23,7 +29,7 @@ interface TestResultRepository {
 
 class PostgresTestResultRepository : TestResultRepository {
     override suspend fun allTestResults(): List<TestResult> = suspendTransaction {
-        TestResultDAO.all().map(::daoToModel)
+        TestResultDAO.Companion.all().map(::daoToModel)
     }
 
     override suspend fun testResultByModid(modid: String): TestResult? = suspendTransaction {
@@ -32,7 +38,7 @@ class PostgresTestResultRepository : TestResultRepository {
             .select(TestResultTable.columns)
             .where { ModTable.modid eq modid }
             .limit(1)
-            .map(TestResultDAO::wrapRow)
+            .map(TestResultDAO.Companion::wrapRow)
             .map(::daoToModel)
             .firstOrNull()
     }
@@ -42,19 +48,19 @@ class PostgresTestResultRepository : TestResultRepository {
             .innerJoin(ProjectTable).innerJoin(ModTable)
             .select(TestResultTable.columns)
             .where {
-                (ModTable.modid eq modid) and 
+                (ModTable.modid eq modid) and
                         (TestResultTable.gameVersion eq gameVersion) and
                         (TestResultTable.toolchainVersion eq toolchainVersion)
             }
             .limit(1)
-            .map(TestResultDAO::wrapRow)
+            .map(TestResultDAO.Companion::wrapRow)
             .map(::daoToModel)
             .firstOrNull()
     }
 
     override suspend fun addTestResult(result: BaseTestResult): TestResult = suspendTransaction {
-        val dbProject = ProjectDAO.find { ProjectTable.id eq result.project.internalId }.single()
-        TestResultDAO.new {
+        val dbProject = ProjectDAO.Companion.find { ProjectTable.id eq result.project.internalId }.single()
+        TestResultDAO.Companion.new {
             project = dbProject
             versionId = result.versionId
             gameVersion = result.gameVersion

@@ -1,20 +1,16 @@
-package org.sinytra.probe
+package org.sinytra.probe.service
 
 import io.ktor.server.application.*
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.sinytra.probe.db.ModTable
-import org.sinytra.probe.db.ProjectTable
-import org.sinytra.probe.db.TestResultTable
-import org.sinytra.probe.model.PostgresModRepository
-import org.sinytra.probe.model.PostgresProjectRepository
-import org.sinytra.probe.model.PostgresTestResultRepository
-import org.sinytra.probe.model.ProjectPlatform
-import org.sinytra.probe.service.GlobalPlatformService
-import org.sinytra.probe.service.ModrinthService
-import org.sinytra.probe.service.PersistenceService
-import org.sinytra.probe.service.SetupService
-import java.nio.file.Path
+import org.sinytra.probe.core.db.ModTable
+import org.sinytra.probe.core.db.ProjectTable
+import org.sinytra.probe.core.db.TestResultTable
+import org.sinytra.probe.core.model.PostgresModRepository
+import org.sinytra.probe.core.model.PostgresProjectRepository
+import org.sinytra.probe.core.model.PostgresTestResultRepository
+import org.sinytra.probe.core.model.ProjectPlatform
+import org.sinytra.probe.core.service.*
 import kotlin.io.path.Path
 import kotlin.io.path.createDirectories
 import kotlin.io.path.div
@@ -25,18 +21,15 @@ fun main(args: Array<String>) {
     io.ktor.server.netty.EngineMain.main(appArgs)
 }
 
-var baseStoragePathInternal: Path? = null
-fun getBaseStoragePath(): Path = baseStoragePathInternal ?: throw IllegalStateException("Missing base storage path variable")
-
 fun Application.module() {
-    baseStoragePathInternal = environment.config.propertyOrNull("probe.storageBasePath")?.getString()?.let(::Path) ?: Path(".")
+    val baseStoragePath = environment.config.propertyOrNull("probe.storageBasePath")?.getString()?.let(::Path) ?: Path(".")
     val useLocalCache = environment.config.propertyOrNull("probe.useLocalCache")?.getString() == "true"
     val nfrtVersion = environment.config.property("probe.nfrtVersion").getString()
     val neoForgeVersion = environment.config.property("probe.neoForgeVersion").getString()
     val gameVersion = environment.config.property("probe.gameVersion").getString()
     val transformerVersion = environment.config.property("probe.transformerVersion").getString()
 
-    val setupDir = getBaseStoragePath() / ".setup"
+    val setupDir = baseStoragePath / ".setup"
     setupDir.createDirectories()
     val setup = SetupService(setupDir, useLocalCache, nfrtVersion, neoForgeVersion, transformerVersion)
 
@@ -47,10 +40,10 @@ fun Application.module() {
     val testResultsRepository = PostgresTestResultRepository()
 
     val redis = connectToRedis()
-    val modrinth = ModrinthService(getBaseStoragePath(), redis)
+    val modrinth = ModrinthService(baseStoragePath, redis)
     val platforms = GlobalPlatformService(mapOf(ProjectPlatform.MODRINTH to modrinth))
 
-    val transformation = TransformationService(platforms, gameFiles, setup)
+    val transformation = TransformationService(baseStoragePath, platforms, gameFiles, setup)
     val persistence = PersistenceService(modRepository, projectRepository, testResultsRepository)
 
     configureSerialization()

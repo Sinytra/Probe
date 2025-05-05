@@ -1,4 +1,4 @@
-package org.sinytra.probe.service
+package org.sinytra.probe.core.service
 
 import org.slf4j.LoggerFactory
 import java.io.FileOutputStream

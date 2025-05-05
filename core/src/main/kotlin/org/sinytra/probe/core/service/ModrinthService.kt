@@ -1,4 +1,4 @@
-package org.sinytra.probe.service
+package org.sinytra.probe.core.service
 
 import io.ktor.client.*
 import io.ktor.client.call.*
@@ -20,10 +20,11 @@ import io.lettuce.core.api.coroutines
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNamingStrategy
-import org.sinytra.probe.model.ProjectPlatform
+import org.sinytra.probe.core.model.ProjectPlatform
 import org.slf4j.LoggerFactory
 import java.nio.file.Path
 import kotlin.io.path.*
@@ -138,7 +139,7 @@ class ModrinthService(
         install(ContentNegotiation) {
             json(Json {
                 ignoreUnknownKeys = true
-                @OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
+                @OptIn(ExperimentalSerializationApi::class)
                 namingStrategy = JsonNamingStrategy.SnakeCase
             })
         }

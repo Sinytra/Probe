@@ -1,4 +1,4 @@
-package org.sinytra.probe
+package org.sinytra.probe.service
 
 import io.ktor.http.*
 import io.ktor.serialization.*
@@ -8,12 +8,13 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.Serializable
-import org.sinytra.probe.model.ProjectPlatform
-import org.sinytra.probe.model.TestResult
-import org.sinytra.probe.service.AsyncTransformationRunner
-import org.sinytra.probe.service.GlobalPlatformService
-import org.sinytra.probe.service.LOADER_FABRIC
-import org.sinytra.probe.service.PersistenceService
+import org.sinytra.probe.core.model.ProjectPlatform
+import org.sinytra.probe.core.model.TestResult
+import org.sinytra.probe.core.service.AsyncTransformationRunner
+import org.sinytra.probe.core.service.GlobalPlatformService
+import org.sinytra.probe.core.service.LOADER_FABRIC
+import org.sinytra.probe.core.service.PersistenceService
+import org.sinytra.probe.core.service.TransformationService
 
 @Serializable
 data class TestRequestBody(val platform: ProjectPlatform, val id: String)

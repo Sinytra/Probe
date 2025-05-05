@@ -1,11 +1,10 @@
-package org.sinytra.probe
+package org.sinytra.probe.core.service
 
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
-import org.sinytra.probe.model.ProjectPlatform
-import org.sinytra.probe.service.*
+import org.sinytra.probe.core.model.ProjectPlatform
 import org.slf4j.LoggerFactory
 import java.lang.ProcessBuilder.Redirect
 import java.nio.file.Path
@@ -28,7 +27,12 @@ data class TransformLibOutput(
 ) 
 
 @OptIn(ExperimentalPathApi::class)
-class TransformationService(private val platforms: GlobalPlatformService, private val gameFiles: GameFiles, private val setup: SetupService) {
+class TransformationService(
+    private val storagePath: Path,
+    private val platforms: GlobalPlatformService,
+    private val gameFiles: GameFiles,
+    private val setup: SetupService
+) {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(TransformationService::class.java)
     }
@@ -37,10 +41,10 @@ class TransformationService(private val platforms: GlobalPlatformService, privat
         val mainFile = project.version
         val otherFiles = project.flattenDependencies()
 
-        val allFiles = (listOf(mainFile) + otherFiles).map(ProjectVersion::getFilePath)
+        val allFiles = (listOf(mainFile) + otherFiles).map { it.getFilePath(storagePath) }
 
         val classPath = gameFiles.loaderFiles.toMutableList() + resolveMandatedLibraries(gameVersion)
-        val workDir = project.version.getFilePath().parent / "output"
+        val workDir = project.version.getFilePath(storagePath).parent / "output"
 
         if (workDir.exists()) {
             workDir.deleteRecursively()
@@ -64,7 +68,7 @@ class TransformationService(private val platforms: GlobalPlatformService, privat
         val ffapi = platforms.resolveProjectVersion(ProjectPlatform.MODRINTH, MR_FFAPI_ID, gameVersion, LOADER_NEOFORGE)
             ?: throw RuntimeException("Unable to resolve required dep '$MR_FFAPI_ID'")
 
-        return listOf(ffapi.getFilePath())
+        return listOf(ffapi.getFilePath(storagePath))
     }
 
     private fun ResolvedProject.flattenDependencies(): List<ProjectVersion> =

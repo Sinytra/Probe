@@ -1,4 +1,4 @@
-package org.sinytra.probe.db
+package org.sinytra.probe.core.db
 
 import kotlinx.coroutines.Dispatchers
 import org.jetbrains.exposed.sql.Transaction

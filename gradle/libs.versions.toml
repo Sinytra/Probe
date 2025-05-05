@@ -12,6 +12,8 @@ transformer-version = "2.0.0-beta.8+1.21.1+dev-ge6bf244"
 kotlinx-hocon-version = "1.8.1"
 jib-version = "3.4.5"
 gradleutils-version = "3.0.0"
+md-gen-version = "1.3.2"
+picocli-version = "4.7.7"
 
 [libraries]
 ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor-version" }
@@ -39,6 +41,9 @@ kotlinx-coroutines-reactive = { module = "org.jetbrains.kotlinx:kotlinx-coroutin
 kord-core = { module = "dev.kord:kord-core", version.ref = "kord-version" }
 connector-tranformer = { module = "org.sinytra.connector:transformer", version.ref = "transformer-version" }
 kotlinx-serialization-hocon = { module = "org.jetbrains.kotlinx:kotlinx-serialization-hocon", version.ref = "kotlinx-hocon-version" }
+markdown-generator = { module = "com.github.Steppschuh:Java-Markdown-Generator", version.ref = "md-gen-version" }
+picocli = { module = "info.picocli:picocli", version.ref = "picocli-version" }
+picocli-codegen = { module = "info.picocli:picocli-codegen", version.ref = "picocli-version" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin-version" }

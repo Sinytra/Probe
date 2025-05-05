@@ -1,7 +1,6 @@
-package org.sinytra.probe.service
+package org.sinytra.probe.core.service
 
-import org.sinytra.probe.getBaseStoragePath
-import org.sinytra.probe.model.ProjectPlatform
+import org.sinytra.probe.core.model.ProjectPlatform
 import java.nio.file.Path
 import kotlin.io.path.div
 
@@ -56,7 +55,6 @@ class GlobalPlatformService(private val platforms: Map<ProjectPlatform, Platform
         getPlatform(platform).resolveProjectVersion(id, gameVersion, loader)
 }
 
-fun ProjectVersion.getFilePath(): Path {
-    val basePath = getBaseStoragePath()
+fun ProjectVersion.getFilePath(basePath: Path): Path {
     return basePath / path
 }

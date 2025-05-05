@@ -1,4 +1,4 @@
-package org.sinytra.probe
+package org.sinytra.probe.service
 
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*

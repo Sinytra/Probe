@@ -1,4 +1,4 @@
-package org.sinytra.probe.model
+package org.sinytra.probe.core.model
 
 import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.Serializable

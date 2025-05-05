@@ -15,8 +15,7 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
-import org.sinytra.probe.TransformLibOutput
-import org.sinytra.probe.service.*
+import org.sinytra.probe.core.service.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.nio.file.Path

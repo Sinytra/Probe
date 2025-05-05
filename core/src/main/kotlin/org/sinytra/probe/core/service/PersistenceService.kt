@@ -1,7 +1,12 @@
-package org.sinytra.probe.service
+package org.sinytra.probe.core.service
 
-import org.sinytra.probe.TransformationResult
-import org.sinytra.probe.model.*
+import org.sinytra.probe.core.model.BaseTestResult
+import org.sinytra.probe.core.model.Mod
+import org.sinytra.probe.core.model.ModRepository
+import org.sinytra.probe.core.model.Project
+import org.sinytra.probe.core.model.ProjectRepository
+import org.sinytra.probe.core.model.TestResult
+import org.sinytra.probe.core.model.TestResultRepository
 
 class PersistenceService(private val mods: ModRepository, private val projects: ProjectRepository, private val results: TestResultRepository) {
 

@@ -44,3 +44,5 @@ bin/
 # Other
 core/run
 core/logs
+service/run
+service/logs

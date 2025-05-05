@@ -1,13 +1,9 @@
 plugins {
     alias(libs.plugins.kotlin.jvm)
-    alias(libs.plugins.ktor)
     alias(libs.plugins.kotlin.plugin.serialization)
 }
 
 group = "org.sinytra.probe"
-
-val neoForgeVersion: String by rootProject
-val gameVersion: String by rootProject
 
 val transfomer: Configuration by configurations.creating {
     attributes.attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling.SHADOWED))
@@ -16,46 +12,8 @@ val transfomer: Configuration by configurations.creating {
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
-application {
-    mainClass = "org.sinytra.probe.ApplicationKt"
-
-    val isDevelopment: Boolean = project.ext.has("development")
-    applicationDefaultJvmArgs = mutableListOf(
-        "-Dio.ktor.development=$isDevelopment",
-        "-Dorg.sinytra.probe.storage_path=${file("run").absolutePath}",
-        "-Dorg.sinytra.probe.neo_version=$neoForgeVersion",
-        "-Dorg.sinytra.probe.game_version=$gameVersion",
-        "-Dorg.sinytra.probe.local_cache=true",
-        "-Dorg.probe.logging.level=DEBUG",
-        "--add-opens", "java.base/java.lang.invoke=ALL-UNNAMED"
-    )
-}
-
-ktor {
-    docker {
-        customBaseImage = "eclipse-temurin:21-jdk" // JDK is required for NFRT
-        localImageName.set("sinytra/probe/core")
-        imageTag.set(version.toString())
-        externalRegistry.set(
-            io.ktor.plugin.features.DockerImageRegistry.externalRegistry(
-                username = providers.environmentVariable("DOCKER_REG_USERNAME"),
-                password = providers.environmentVariable("DOCKER_REG_PASSWORD"),
-                project = provider { "sinytra/probe/core" },
-                hostname = provider { "ghcr.io" }
-            )
-        )
-    }
-}
-
 repositories {
     mavenCentral()
-}
-
-afterEvaluate {
-    (application.applicationDefaultJvmArgs as MutableList<String>) += listOf(
-        "-Dorg.sinytra.transformer.path=${transfomer.singleFile.absolutePath}",
-        "-Dorg.sinytra.probe.transformer_version=${libs.connector.tranformer.get().version!!}",
-    )
 }
 
 dependencies {
@@ -84,8 +42,4 @@ dependencies {
     implementation(libs.ktor.client.resources)
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.kotlin.test.junit)
-}
-
-tasks.getByName("run") {
-    dependsOn(transfomer)
 }

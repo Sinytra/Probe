@@ -1,4 +1,4 @@
-package org.sinytra.probe.service
+package org.sinytra.probe.core.service
 
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.asCoroutineDispatcher
@@ -6,9 +6,8 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import org.sinytra.probe.TransformationService
-import org.sinytra.probe.model.ProjectPlatform
-import org.sinytra.probe.model.TestResult
+import org.sinytra.probe.core.model.ProjectPlatform
+import org.sinytra.probe.core.model.TestResult
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 

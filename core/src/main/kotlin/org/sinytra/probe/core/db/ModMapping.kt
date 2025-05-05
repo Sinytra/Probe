@@ -1,10 +1,10 @@
-package org.sinytra.probe.db
+package org.sinytra.probe.core.db
 
 import org.jetbrains.exposed.dao.IntEntity
 import org.jetbrains.exposed.dao.IntEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.IntIdTable
-import org.sinytra.probe.model.Mod
+import org.sinytra.probe.core.model.Mod
 
 object ModTable : IntIdTable("mod") {
     val modid = varchar("modid", 255).uniqueIndex()
