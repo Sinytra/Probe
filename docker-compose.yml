@@ -1,6 +1,16 @@
 name: probe
 
 services:
+  gatherer:
+    image: sinytra/probe/gatherer:latest
+    command: regressions --results=/probe/old_results.json
+    volumes:
+      - ./gatherer/run:/probe
+    environment:
+      - REDIS_URL=redis://probe-cache-1:6379/0
+      - TEST_COUNT=10
+    networks:
+      - probe
   postgres:
     image: postgres:16.2
     ports:

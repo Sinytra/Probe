@@ -77,14 +77,14 @@ jib {
         jvmFlags = listOf(
             "-Dorg.sinytra.probe.version=$version"
         )
-        args = listOf(
-            "--nfrt-version", nfrtVersion,
-            "--neoforge-version", neoForgeVersion,
-            "--toolchain-version", transformerVersion,
-            "--game-version", gameVersion,
-            "--work-dir", "/probe"
-        ) + compatibleGameVersions
-            .split(",")
-            .flatMap { listOf("--compatible-version", it) }
+
+        environment = mapOf(
+            "NFRT_VERSION" to nfrtVersion,
+            "NEOFORGE_VERSION" to neoForgeVersion,
+            "TOOLCHAIN_VERSION" to transformerVersion,
+            "GAME_VERSION" to gameVersion,
+            "WORK_DIR" to "/probe",
+            "COMPATIBLE_VERSIONS" to compatibleGameVersions
+        ) 
     }
 }

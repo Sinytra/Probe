@@ -56,7 +56,7 @@ data class GathererParams(
     val writeReport: Boolean
 )
 
-fun runGatherer(params: GathererParams) {
+fun setupGatherer(params: GathererParams): BetterGatherer {
     val workDir = params.workDir
     val setupService = SetupService(
         (workDir / ".setup").also { it.createDirectories() },
@@ -84,7 +84,7 @@ fun runGatherer(params: GathererParams) {
     setupService.getTransformLibPath()
     setupService.installDependencies()
 
-    gatherer.run()
+    return gatherer
 }
 
 class BetterGatherer(
@@ -101,12 +101,15 @@ class BetterGatherer(
     val concurrentDownloads: Int = params.concurrentDownloads
     val concurrentTests: Int = params.concurrentTests
     val writeReport: Boolean = params.writeReport
-
+    
     fun run() {
         // Read gathered projects
         val candidatesFile = gathererDir / "candidates.json"
         val candidates = readCandidatesFile(maxCount, candidatesFile) ?: gatherCandidateProjects(maxCount, candidatesFile)
+        run(candidates)
+    }
 
+    fun run(candidates: List<ProjectSearchResult>) {
         // Resolve versions
         val dependencies = downloadCandidateMods(candidates)
         val candidateIds = candidates.map { it.projectId }
@@ -195,7 +198,7 @@ class BetterGatherer(
                             return@withPermit SerializableTransformResult(proj, version.versionNumber, null)
                         }
                         val depsPaths = depsFiles.map { modsDir / it.version.path }
-                        depsPaths.firstOrNull { it.notExists() }?.let { 
+                        depsPaths.firstOrNull { it.notExists() }?.let {
                             throw IllegalStateException("Dep path $it does not exist")
                         }
 
@@ -219,7 +222,7 @@ class BetterGatherer(
                             LOGGER.error("Error during transforming ${proj.slug}", e)
                             return@withPermit SerializableTransformResult(proj, version.versionNumber, null)
                         } finally {
-                            completeTest() 
+                            completeTest()
                         }
                     }
                 }
@@ -403,7 +406,7 @@ class BetterGatherer(
             }
             ?.also { LOGGER.info("{} Read {} candidates from cache", ICON_RECYCLE, it.size) }
     }
-    
+
     // TODO
     @OptIn(ExperimentalSerializationApi::class)
     private fun runGathererTransformer(slug: String, transformerPath: Path, workDir: Path, sources: List<Path>, cleanPath: Path, classPath: List<Path>, gameVersion: String): TransformResult {
@@ -417,21 +420,21 @@ class BetterGatherer(
         )
         val sourceArgs = sources.flatMap { listOf("--source", it.absolutePathString()) }
         val classPathArgs = classPath.flatMap { listOf("--classpath", it.absolutePathString()) }
-    
+
         val output = workDir / "output.json"
         var errors = false
         if (!output.exists()) {
             LOGGER.info("{} Testing {}", ICON_TEST, slug)
             val outputLog = workDir / "output.txt"
             val errorLog = workDir / "errors.txt"
-    
+
             val process = ProcessBuilder(baseArgs + sourceArgs + classPathArgs)
                 .directory(workDir.toFile())
                 .redirectOutput(outputLog.toFile())
                 .redirectError(errorLog.toFile())
                 .start()
                 .apply { waitFor(60, TimeUnit.MINUTES) }
-            
+
             stripAnsiCodes(outputLog)
             stripAnsiCodes(errorLog)
 
@@ -439,7 +442,7 @@ class BetterGatherer(
                 LOGGER.error("{} Got errors while transforming {}", ICON_WARN, slug)
                 errors = true
             }
-    
+
             if (process.exitValue() != 0) {
                 if (cleanupOutput) {
                     workDir.deleteRecursively()
@@ -447,13 +450,13 @@ class BetterGatherer(
                 throw IllegalStateException("Failed to run transformations, see log for details")
             }
         }
-    
+
         val parsed: TransformLibOutput = output.inputStream().use(Json::decodeFromStream)
-        
+
         if (cleanupOutput) {
             workDir.deleteRecursively()
         }
-    
+
         return TransformResult(parsed, errors)
     }
 
