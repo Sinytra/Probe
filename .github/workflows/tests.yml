@@ -69,7 +69,7 @@ jobs:
 
       - name: Run tests in a container
         run: >
-          docker run --rm -it
+          docker run --rm
           --network host
           -v ./probe:/probe
           -e REDIS_URL=redis://localhost:6379/0
