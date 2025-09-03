@@ -83,6 +83,10 @@ tasks {
             "TEST_COUNT" to 20
         )
     }
+
+    register("publishDocker") {
+        dependsOn("jib")
+    }
 }
 
 jib {

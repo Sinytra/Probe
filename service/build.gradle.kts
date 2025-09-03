@@ -88,6 +88,12 @@ dependencies {
     testImplementation(libs.kotlin.test.junit)
 }
 
-tasks.getByName("run") {
-    dependsOn(transfomer)
+tasks {
+    getByName("run") {
+        dependsOn(transfomer)
+    }
+
+    register("publishDocker") {
+        dependsOn("publishImage")
+    }
 }

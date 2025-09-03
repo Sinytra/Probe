@@ -23,8 +23,14 @@ dependencies {
     testImplementation(libs.kotlin.test.junit)
 }
 
-tasks.test {
-    useJUnitPlatform()
+tasks {
+    test {
+        useJUnitPlatform()
+    }
+
+    register("publishDocker") {
+        dependsOn("jib")
+    }
 }
 
 kotlin {
