@@ -8,6 +8,7 @@ group = "org.sinytra.probe"
 
 val neoForgeVersion: String by rootProject
 val gameVersion: String by rootProject
+val dockerImage = "sinytra/probe/service"
 
 val transfomer: Configuration by configurations.creating {
     attributes.attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling.SHADOWED))
@@ -34,14 +35,14 @@ application {
 ktor {
     docker {
         customBaseImage = "eclipse-temurin:21-jdk" // JDK is required for NFRT
-        localImageName.set("sinytra/probe/service")
+        localImageName.set(dockerImage)
         imageTag.set(version.toString())
         externalRegistry.set(
             io.ktor.plugin.features.DockerImageRegistry.externalRegistry(
+                hostname = providers.environmentVariable("DOCKER_REGISTRY").orElse("ghcr.io"),
                 username = providers.environmentVariable("DOCKER_REG_USERNAME"),
                 password = providers.environmentVariable("DOCKER_REG_PASSWORD"),
-                project = provider { "sinytra/probe/service" },
-                hostname = provider { "ghcr.io" }
+                project = provider { dockerImage }
             )
         )
     }

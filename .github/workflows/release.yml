@@ -1,16 +1,25 @@
-name: Release Gatherer
+name: Release
 
 on:
+  push:
+    tags: [ 'v*.*.*' ]
   workflow_dispatch:
 
 env:
-  IMAGE: ghcr.io/sinytra/probe/gatherer
+  DOCKER_REGISTRY: ghcr.io
+  DOCKER_REG_USERNAME: ${{ github.actor }}
+  DOCKER_REG_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
   build:
     name: Build and push docker
 
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [ gatherer, discord, service ]
 
     permissions:
       contents: read
@@ -32,7 +41,4 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Build and Push Image
-        env:
-          DOCKER_REG_USERNAME: ${{ github.actor }}
-          DOCKER_REG_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
-        run: ./gradlew :gatherer:jib
+        run: ./gradlew build :${{ matrix.project }}:jib

@@ -11,6 +11,7 @@ val neoForgeVersion: String by rootProject
 val gameVersion: String by rootProject
 val compatibleGameVersions: String by rootProject
 val nfrtVersion: String by rootProject
+val dockerImage = "sinytra/probe/gatherer"
 
 kotlin {
     jvmToolchain(21)
@@ -89,7 +90,11 @@ jib {
         image = "eclipse-temurin:21-jdk"
     }
     to {
-        setImage(providers.environmentVariable("IMAGE").orElse("sinytra/probe/gatherer"))
+        setImage(
+            providers.environmentVariable("DOCKER_REGISTRY")
+                .map { "$it/$dockerImage" }
+                .orElse(dockerImage)
+        )
         tags = setOf("latest", version.toString())
         auth {
             setUsername(providers.environmentVariable("DOCKER_REG_USERNAME"))

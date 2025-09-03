@@ -6,6 +6,8 @@ plugins {
 
 group = "org.sinytra.probe"
 
+val dockerImage = "sinytra/probe/discord"
+
 repositories {
     mavenCentral()
 }
@@ -34,9 +36,13 @@ jib {
         image = "eclipse-temurin:21-jre"
     }
     to {
-        image = "ghcr.io/sinytra/probe/discord"
+        setImage(
+            providers.environmentVariable("DOCKER_REGISTRY")
+                .map { "$it/$dockerImage" }
+                .orElse(dockerImage)
+        )
         tags = setOf("latest", version.toString())
-        auth { 
+        auth {
             setUsername(providers.environmentVariable("DOCKER_REG_USERNAME"))
             setPassword(providers.environmentVariable("DOCKER_REG_PASSWORD"))
         }
