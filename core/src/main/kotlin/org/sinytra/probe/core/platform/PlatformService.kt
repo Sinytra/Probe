@@ -1,4 +1,4 @@
-package org.sinytra.probe.core.service
+package org.sinytra.probe.core.platform
 
 import org.sinytra.probe.core.model.ProjectPlatform
 import java.nio.file.Path

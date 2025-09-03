@@ -10,6 +10,9 @@ import org.sinytra.probe.core.model.PostgresModRepository
 import org.sinytra.probe.core.model.PostgresProjectRepository
 import org.sinytra.probe.core.model.PostgresTestResultRepository
 import org.sinytra.probe.core.model.ProjectPlatform
+import org.sinytra.probe.core.platform.GlobalPlatformService
+import org.sinytra.probe.core.platform.ModrinthPlatform
+import org.sinytra.probe.core.platform.PlatformCache
 import org.sinytra.probe.core.service.*
 import kotlin.io.path.Path
 import kotlin.io.path.createDirectories
@@ -40,7 +43,8 @@ fun Application.module() {
     val testResultsRepository = PostgresTestResultRepository()
 
     val redis = connectToRedis()
-    val modrinth = ModrinthService(baseStoragePath, redis)
+    val cache = PlatformCache(redis)
+    val modrinth = ModrinthPlatform(baseStoragePath, cache)
     val platforms = GlobalPlatformService(mapOf(ProjectPlatform.MODRINTH to modrinth))
 
     val transformation = TransformationService(baseStoragePath, platforms, gameFiles, setup)

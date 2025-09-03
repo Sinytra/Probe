@@ -8,6 +8,8 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.sinytra.probe.core.model.ProjectPlatform
 import org.sinytra.probe.core.model.TestResult
+import org.sinytra.probe.core.platform.PlatformProject
+import org.sinytra.probe.core.platform.ResolvedProject
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 

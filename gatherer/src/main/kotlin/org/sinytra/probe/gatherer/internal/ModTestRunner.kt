@@ -1,110 +1,64 @@
-@file:OptIn(ExperimentalLettuceCoroutinesApi::class, ExperimentalPathApi::class)
+@file:OptIn(ExperimentalPathApi::class)
 
-package org.sinytra.probe.gatherer
+package org.sinytra.probe.gatherer.internal
 
-import io.lettuce.core.ExperimentalLettuceCoroutinesApi
-import io.lettuce.core.RedisClient
-import io.lettuce.core.api.StatefulRedisConnection
-import io.lettuce.core.api.coroutines
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
-import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.decodeFromStream
-import org.sinytra.probe.core.service.*
+import org.sinytra.probe.core.platform.ModrinthPlatform
+import org.sinytra.probe.core.platform.ModrinthPlatform.Companion.FAPI_ID
+import org.sinytra.probe.core.platform.ModrinthPlatform.Companion.FFAPI_ID
+import org.sinytra.probe.core.platform.ModrinthPlatform.Companion.LOADER_FABRIC
+import org.sinytra.probe.core.platform.ModrinthPlatform.Companion.LOADER_NEOFORGE
+import org.sinytra.probe.core.platform.ProjectSearchResult
+import org.sinytra.probe.core.platform.ResolvedProject
+import org.sinytra.probe.core.service.SetupService
+import org.sinytra.probe.gatherer.*
+import org.sinytra.probe.gatherer.internal.TransformerInvoker.TransformResult
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.nio.file.Path
 import java.util.*
-import java.util.concurrent.TimeUnit
 import kotlin.io.path.*
-import kotlin.time.DurationUnit
 import kotlin.time.measureTime
 import kotlin.time.measureTimedValue
-import kotlin.time.toDuration
 
-private val LOGGER: Logger = LoggerFactory.getLogger("BetterGatherer")
-
-internal const val ICON_RECYCLE = "\u267B\uFE0F"
-internal const val ICON_PACKAGE = "\uD83D\uDCE6"
-internal const val ICON_DOWNLOAD = "\u2B07\uFE0F"
-internal const val ICON_MAG_GLASS = "\uD83D\uDD0D"
-internal const val ICON_TRASH = "\uD83D\uDDD1"
-internal const val ICON_CHECK = "\u2705"
-internal const val ICON_X = "\u274C"
-internal const val ICON_WARN = "\u26A0\uFE0F"
-internal const val ICON_TEST = "\uD83E\uDDEA"
-internal const val ICON_EXCLAMATION = "\u2757"
-internal const val ICON_CLOCK = "\u23F0"
-private val EXCLUDED_PROJECTS = listOf("P7dR8mSH", "Aqlf1Shp")
-
-data class GathererParams(
-    val nfrtVersion: String,
-    val neoForgeVersion: String,
-    val toolchainVersion: String,
-    val gameVersion: String,
-    val compatibleGameVersions: List<String>,
-    val workDir: Path,
-    val tests: Int,
-    val cleanupOutput: Boolean,
-    val concurrentDownloads: Int,
-    val concurrentTests: Int,
-    val writeReport: Boolean
+@Serializable
+data class SerializableTransformResult(
+    val project: ProjectSearchResult,
+    val versionNumber: String,
+    val result: TransformResult?
 )
 
-fun setupGatherer(params: GathererParams): BetterGatherer {
-    val workDir = params.workDir
-    val setupService = SetupService(
-        (workDir / ".setup").also { it.createDirectories() },
-        true,
-        params.nfrtVersion,
-        params.neoForgeVersion,
-        params.toolchainVersion
-    )
-
-    val url = System.getenv("REDIS_URL") ?: throw RuntimeException("Missing REDIS_URL")
-    LOGGER.trace("Connecting to redis instance")
-    val redisClient = RedisClient.create(url)
-    val redisConnection = redisClient.connect()
-
-    val modrinthService = ModrinthService(workDir / "mods", redisConnection)
-
-    val gatherer = BetterGatherer(
-        workDir,
-        setupService,
-        modrinthService,
-        redisConnection,
-        params
-    )
-
-    setupService.getTransformLibPath()
-    setupService.installDependencies()
-
-    return gatherer
-}
-
-class BetterGatherer(
-    private val gathererDir: Path,
+class ModTestRunner(
+    private val workingDir: Path,
     private val setup: SetupService,
-    private val modrinth: ModrinthService,
-    private val redisConnection: StatefulRedisConnection<String, String>,
-    private val params: GathererParams
+    private val modrinth: ModrinthPlatform,
+    private val params: TestRunnerParams
 ) {
+    companion object {
+        private val LOGGER: Logger = LoggerFactory.getLogger("ModTestRunner")
+        private val EXCLUDED_PROJECTS = listOf(
+            FAPI_ID,
+            FFAPI_ID
+        )
+    }
+
     private val gameVersion: String = params.gameVersion
     private val compatibleGameVersions: List<String> = params.compatibleGameVersions
     private val maxCount: Int = params.tests
-    private val cleanupOutput: Boolean = params.cleanupOutput
+    private val transformerInvoker: TransformerInvoker = TransformerInvoker(params.gameVersion, params.cleanupOutput)
     val concurrentDownloads: Int = params.concurrentDownloads
     val concurrentTests: Int = params.concurrentTests
     val writeReport: Boolean = params.writeReport
-    
+
     fun run() {
         // Read gathered projects
-        val candidatesFile = gathererDir / "candidates.json"
+        val candidatesFile = workingDir / "candidates.json"
         val candidates = readCandidatesFile(maxCount, candidatesFile) ?: gatherCandidateProjects(maxCount, candidatesFile)
         run(candidates)
     }
@@ -126,31 +80,8 @@ class BetterGatherer(
         runBlocking {
             val testCandidates = candidates.filterNot { EXCLUDED_PROJECTS.contains(it.id) }.take(maxCount)
             val (results, duration) = measureTimedValue { runTests(testCandidates, resolvedDeps, missingDeps) }
-            val compatible = results.count { it.result?.output?.success == true }
-            val incompatible = results.count { it.result?.output?.success == false }
-            val errored = results.count { it.result?.errors == true }
-            val failed = results.count { it.result == null }
 
-            LOGGER.info("==== Test results summary ====")
-            LOGGER.info("{} Compatible:\t\t\t{}", ICON_CHECK, compatible)
-            LOGGER.info("{} Incompatible:\t\t\t{}", ICON_X, incompatible)
-            LOGGER.info("{} Errored:\t\t\t\t{}", ICON_WARN, errored)
-            LOGGER.info("{} Failed:\t\t\t\t{}", ICON_EXCLAMATION, failed)
-            LOGGER.info("==============================")
-
-            val resultsFile = gathererDir / "results.json"
-            resultsFile.writeText(Json.encodeToString(results))
-
-            if (writeReport) {
-                val reportFile = gathererDir / "report.md"
-                val durationStr = if (duration < 1.toDuration(DurationUnit.SECONDS))
-                    duration.toString(DurationUnit.MILLISECONDS)
-                else if (duration < 1.toDuration(DurationUnit.MINUTES))
-                    duration.toString(DurationUnit.SECONDS, 3)
-                else
-                    duration.toString(DurationUnit.MINUTES, 2)
-                writeReport(reportFile, results, durationStr, params)
-            }
+            ResultReporter.processResults(results, duration, workingDir, writeReport, params)
         }
     }
 
@@ -164,7 +95,7 @@ class BetterGatherer(
         val transformerPath = setup.getTransformLibPath()
         val gameFiles = setup.installDependencies()
 
-        val modsDir = gathererDir / "mods"
+        val modsDir = workingDir / "mods"
         val classPath = gameFiles.loaderFiles.toMutableList() + resolveMandatedLibraries(modsDir)
         val depsMap = dependencies.associate {
             it.version.projectId to it.dependencies
@@ -203,7 +134,7 @@ class BetterGatherer(
                         }
 
                         try {
-                            val result = runGathererTransformer(
+                            val result = transformerInvoker.invokeTransform(
                                 proj.slug,
                                 transformerPath,
                                 versionFile.parent.resolve("output").also {
@@ -212,14 +143,15 @@ class BetterGatherer(
                                 },
                                 listOf(versionFile) + depsPaths,
                                 gameFiles.cleanFile,
-                                classPath,
-                                gameVersion
+                                classPath
                             )
                             val output = result.output
                             LOGGER.info("{} Transformed project ${proj.slug}: ID ${output.primaryModid} Success: ${output.success}", if (output.success) "\u2705" else "\u274C")
+
                             return@withPermit SerializableTransformResult(proj, version.versionNumber, result)
                         } catch (e: Exception) {
                             LOGGER.error("Error during transforming ${proj.slug}", e)
+
                             return@withPermit SerializableTransformResult(proj, version.versionNumber, null)
                         } finally {
                             completeTest()
@@ -269,8 +201,7 @@ class BetterGatherer(
         val dependencies = Collections.synchronizedMap<String, List<String>>(mutableMapOf())
         try {
             runBlocking {
-                val cmd = redisConnection.coroutines()
-                val downloadQueue = candidates.filter { cmd.exists("modrinth:version:${it.versionId}") != 1L }
+                val downloadQueue = candidates.filterNot { modrinth.hasVersion(it.versionId) }
 
                 if (downloadQueue.isNotEmpty()) {
                     LOGGER.info("{} Downloading {} mods", ICON_PACKAGE, downloadQueue.size)
@@ -282,7 +213,7 @@ class BetterGatherer(
                             launch(dispatcher) {
                                 semaphore.withPermit {
                                     try {
-                                        val needsDownload = cmd.exists("modrinth:version:${it.versionId}") != 1L
+                                        val needsDownload = !modrinth.hasVersion(it.versionId)
 
                                         if (needsDownload) {
                                             LOGGER.info("{} Downloading {}", ICON_DOWNLOAD, it.slug)
@@ -377,7 +308,7 @@ class BetterGatherer(
         val neoKeys = neoResults.flatMap { it.first }
         val neoProjectIDs = mutableMapOf<String, ProjectSearchResult>().also { map -> neoResults.forEach { map += it.second } }
 
-        fabricKeys -= neoKeys
+        fabricKeys -= neoKeys.toSet()
         val map = fabricProjectIDs.filterKeys { !neoProjectIDs.contains(it) }
 
         return@coroutineScope fabricKeys to map
@@ -390,7 +321,7 @@ class BetterGatherer(
     }
 
     private suspend fun resolveMandatedLibraries(dest: Path): List<Path> {
-        val resolved = modrinth.resolveProjectVersion(MR_FFAPI_ID, gameVersion, LOADER_NEOFORGE)!!
+        val resolved = modrinth.resolveProjectVersion(FFAPI_ID, gameVersion, LOADER_NEOFORGE)!!
         return listOf(dest / resolved.path)
     }
 
@@ -406,69 +337,4 @@ class BetterGatherer(
             }
             ?.also { LOGGER.info("{} Read {} candidates from cache", ICON_RECYCLE, it.size) }
     }
-
-    // TODO
-    @OptIn(ExperimentalSerializationApi::class)
-    private fun runGathererTransformer(slug: String, transformerPath: Path, workDir: Path, sources: List<Path>, cleanPath: Path, classPath: List<Path>, gameVersion: String): TransformResult {
-        val baseArgs = listOf(
-            "java",
-            "--add-opens", "java.base/java.lang.invoke=ALL-UNNAMED",
-            "-jar", transformerPath.absolutePathString(),
-            "--clean", cleanPath.absolutePathString(),
-            "--game-version", gameVersion,
-            "--work-dir", workDir.absolutePathString(),
-        )
-        val sourceArgs = sources.flatMap { listOf("--source", it.absolutePathString()) }
-        val classPathArgs = classPath.flatMap { listOf("--classpath", it.absolutePathString()) }
-
-        val output = workDir / "output.json"
-        var errors = false
-        if (!output.exists()) {
-            LOGGER.info("{} Testing {}", ICON_TEST, slug)
-            val outputLog = workDir / "output.txt"
-            val errorLog = workDir / "errors.txt"
-
-            val process = ProcessBuilder(baseArgs + sourceArgs + classPathArgs)
-                .directory(workDir.toFile())
-                .redirectOutput(outputLog.toFile())
-                .redirectError(errorLog.toFile())
-                .start()
-                .apply { waitFor(60, TimeUnit.MINUTES) }
-
-            stripAnsiCodes(outputLog)
-            stripAnsiCodes(errorLog)
-
-            if (errorLog.readText().isNotEmpty()) {
-                LOGGER.error("{} Got errors while transforming {}", ICON_WARN, slug)
-                errors = true
-            }
-
-            if (process.exitValue() != 0) {
-                if (cleanupOutput) {
-                    workDir.deleteRecursively()
-                }
-                throw IllegalStateException("Failed to run transformations, see log for details")
-            }
-        }
-
-        val parsed: TransformLibOutput = output.inputStream().use(Json::decodeFromStream)
-
-        if (cleanupOutput) {
-            workDir.deleteRecursively()
-        }
-
-        return TransformResult(parsed, errors)
-    }
-
-    private fun stripAnsiCodes(file: Path) {
-        val ansiRegex = Regex("\u001B\\[[;\\d]*m")
-        val cleaned = file.readText().replace(ansiRegex, "")
-        file.writeText(cleaned)
-    }
-
-    @Serializable
-    data class TransformResult(val output: TransformLibOutput, val errors: Boolean)
-
-    @Serializable
-    data class SerializableTransformResult(val project: ProjectSearchResult, val versionNumber: String, val result: TransformResult?)
 }

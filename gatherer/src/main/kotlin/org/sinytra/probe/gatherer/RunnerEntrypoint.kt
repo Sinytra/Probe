@@ -60,17 +60,20 @@ class GathererMain {
 
     @Option(names = ["--write-report"], scope = ScopeType.INHERIT, defaultValue = "\${ENABLE_TEST_REPORT:-true}", description = ["Write markdown test report"])
     var writeReport: Boolean? = null
+    
+    @Option(names = ["--cleanup"], scope = ScopeType.INHERIT, defaultValue = "\${CLEANUP_OUTPUT:-false}", description = ["Clean up after testing"])
+    var cleanup: Boolean? = null
 
     init {
         LOGGER.info("Running Probe Transformer version {}", getVersion())
     }
 
-    fun setupParams(): GathererParams {
+    fun setupParams(): TestRunnerParams {
         if (!workDir!!.exists()) {
             workDir!!.createDirectories()
         }
-        val cleanupOutput = System.getenv("CLEANUP_OUTPUT") == "true"
-        return GathererParams(
+
+        return TestRunnerParams(
             nfrtVersion!!,
             neoForgeVersion!!,
             toolchainVersion!!,
@@ -78,7 +81,7 @@ class GathererMain {
             compatibleGameVersions,
             workDir!!,
             tests!!,
-            cleanupOutput,
+            cleanup!!,
             concurrentDownloads!!,
             concurrentTests!!,
             writeReport!!

@@ -5,6 +5,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import org.sinytra.probe.core.model.ProjectPlatform
+import org.sinytra.probe.core.platform.*
 import org.slf4j.LoggerFactory
 import java.lang.ProcessBuilder.Redirect
 import java.nio.file.Path
@@ -65,8 +66,8 @@ class TransformationService(
     }
 
     private suspend fun resolveMandatedLibraries(gameVersion: String): List<Path> {
-        val ffapi = platforms.resolveProjectVersion(ProjectPlatform.MODRINTH, MR_FFAPI_ID, gameVersion, LOADER_NEOFORGE)
-            ?: throw RuntimeException("Unable to resolve required dep '$MR_FFAPI_ID'")
+        val ffapi = platforms.resolveProjectVersion(ProjectPlatform.MODRINTH, ModrinthPlatform.FFAPI_ID, gameVersion, ModrinthPlatform.LOADER_NEOFORGE)
+            ?: throw RuntimeException("Unable to resolve required dep '${ModrinthPlatform.FFAPI_ID}'")
 
         return listOf(ffapi.getFilePath(storagePath))
     }

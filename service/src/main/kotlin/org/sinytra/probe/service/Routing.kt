@@ -11,8 +11,8 @@ import kotlinx.serialization.Serializable
 import org.sinytra.probe.core.model.ProjectPlatform
 import org.sinytra.probe.core.model.TestResult
 import org.sinytra.probe.core.service.AsyncTransformationRunner
-import org.sinytra.probe.core.service.GlobalPlatformService
-import org.sinytra.probe.core.service.LOADER_FABRIC
+import org.sinytra.probe.core.platform.GlobalPlatformService
+import org.sinytra.probe.core.platform.ModrinthPlatform.Companion.LOADER_FABRIC
 import org.sinytra.probe.core.service.PersistenceService
 import org.sinytra.probe.core.service.TransformationService
 

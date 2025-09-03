@@ -11,7 +11,7 @@ class RunTestsCommand : Callable<Int> {
 
     override fun call(): Int {
         val params = commonOptions!!.setupParams()
-        val gatherer = setupGatherer(params)
+        val gatherer = createTestRunner(params)
         gatherer.run()
         return 0
     }
