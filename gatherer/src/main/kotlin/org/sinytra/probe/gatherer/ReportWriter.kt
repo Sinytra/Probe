@@ -54,7 +54,7 @@ fun writeReport(dest: Path, results: List<BetterGatherer.SerializableTransformRe
                             res.versionNumber,
                             res.result?.output?.primaryModid?.let(::Code) ?: "-",
                             resultStatus(res),
-                            "[Link](https://modrinth.com/mod/${res.project.projectId})"
+                            "[Link](https://modrinth.com/mod/${res.project.id})"
                         )
                     }
                 }

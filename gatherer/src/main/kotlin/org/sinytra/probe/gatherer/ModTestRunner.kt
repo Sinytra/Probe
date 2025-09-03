@@ -112,7 +112,7 @@ class BetterGatherer(
     fun run(candidates: List<ProjectSearchResult>) {
         // Resolve versions
         val dependencies = downloadCandidateMods(candidates)
-        val candidateIds = candidates.map { it.projectId }
+        val candidateIds = candidates.map(ProjectSearchResult::id)
         val missingDeps = dependencies.values.flatten().distinct().filterNot(candidateIds::contains)
 
         val resolvedDeps = downloadDependencies(missingDeps)
@@ -124,7 +124,7 @@ class BetterGatherer(
 
         // Run tests
         runBlocking {
-            val testCandidates = candidates.filterNot { EXCLUDED_PROJECTS.contains(it.projectId) }.take(maxCount)
+            val testCandidates = candidates.filterNot { EXCLUDED_PROJECTS.contains(it.id) }.take(maxCount)
             val (results, duration) = measureTimedValue { runTests(testCandidates, resolvedDeps, missingDeps) }
             val compatible = results.count { it.result?.output?.success == true }
             val incompatible = results.count { it.result?.output?.success == false }
@@ -191,7 +191,7 @@ class BetterGatherer(
                             ?: throw IllegalStateException("Missing version for ${proj.slug}")
                         val versionFile = modsDir / version.path
 
-                        val depsFiles = depsMap[proj.projectId] ?: emptyList()
+                        val depsFiles = depsMap[proj.id] ?: emptyList()
                         if (depsFiles.any { missingDeps.contains(it.version.projectId) }) {
                             LOGGER.error("Skipping test for ${proj.slug} due to missing deps")
                             completeTest()
@@ -292,10 +292,10 @@ class BetterGatherer(
                                             return@withPermit
                                         }
 
-                                        LOGGER.debug("Found {} dependencies for {}: {}", version.dependencies.size, it.projectId, version.dependencies)
+                                        LOGGER.debug("Found {} dependencies for {}: {}", version.dependencies.size, it.id, version.dependencies)
                                         version.dependencies.filterNot(EXCLUDED_PROJECTS::contains)
                                             .takeIf(List<String>::isNotEmpty)
-                                            ?.let { l -> dependencies[it.projectId] = l }
+                                            ?.let { l -> dependencies[it.id] = l }
 
                                         mutex.withLock {
                                             if (needsDownload) {
@@ -344,7 +344,7 @@ class BetterGatherer(
         LOGGER.debug("Retrieved {} fabric-exclusive mods in {} ms", exclusiveMods.size, elapsed.inWholeMilliseconds)
 
         val projectList: List<ProjectSearchResult> = exclusiveMods.values
-            .sortedWith { a, b -> exclusiveKeys.indexOf(a.projectId) - exclusiveKeys.indexOf(b.projectId) }
+            .sortedWith { a, b -> exclusiveKeys.indexOf(a.id) - exclusiveKeys.indexOf(b.id) }
             .take(count)
 
         val json = Json.encodeToString(projectList)
@@ -359,13 +359,13 @@ class BetterGatherer(
         val fabricTasks = (0..9).map { i ->
             async(Dispatchers.IO) {
                 modrinth.searchProjects(batch, batchOffset + i * batch, gameVersion, LOADER_FABRIC, LOADER_NEOFORGE)
-                    ?.filterNot { EXCLUDED_PROJECTS.contains(it.projectId) }
+                    ?.filterNot { EXCLUDED_PROJECTS.contains(it.id) }
             }
         }
         val neoTasks = (0..9).map { i ->
             async(Dispatchers.IO) {
                 modrinth.searchProjects(batch, batchOffset + i * batch, gameVersion, LOADER_NEOFORGE, null)
-                    ?.filterNot { EXCLUDED_PROJECTS.contains(it.projectId) }
+                    ?.filterNot { EXCLUDED_PROJECTS.contains(it.id) }
             }
         }
         val fabricResults = fabricTasks.awaitAll().filterNotNull().map(::processResults)
@@ -384,8 +384,8 @@ class BetterGatherer(
     }
 
     private fun processResults(results: List<ProjectSearchResult>): Pair<List<String>, Map<String, ProjectSearchResult>> {
-        val keys = results.map { it.projectId }
-        val map = results.associateBy { it.projectId }
+        val keys = results.map { it.id }
+        val map = results.associateBy { it.id }
         return keys to map
     }
 

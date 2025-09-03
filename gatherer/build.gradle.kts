@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.plugin.serialization)
     alias(libs.plugins.jib)
+    application
 }
 
 group = "org.sinytra.probe"
@@ -17,11 +18,17 @@ kotlin {
 
 val transfomer: Configuration by configurations.creating
 
+application {
+    mainClass = "org.sinytra.probe.gatherer.RunnerEntrypointKt"
+
+    applicationDefaultJvmArgs = listOf("-Dorg.sinytra.probe.version=$version")
+}
+
 repositories {
     mavenCentral()
     maven {
         url = uri("https://jitpack.io")
-        content { 
+        content {
             includeGroup("com.github.Steppschuh")
         }
     }
@@ -58,6 +65,25 @@ dependencies {
     annotationProcessor(libs.picocli.codegen)
 }
 
+tasks {
+    named<JavaExec>("run") {
+        val transformerVersion = libs.connector.tranformer.get().version!!
+
+        args("run")
+        environment(
+            "NFRT_VERSION" to nfrtVersion,
+            "NEOFORGE_VERSION" to neoForgeVersion,
+            "TOOLCHAIN_VERSION" to transformerVersion,
+            "GAME_VERSION" to gameVersion,
+            "WORK_DIR" to file("run").absolutePath,
+            "COMPATIBLE_VERSIONS" to compatibleGameVersions,
+
+            "REDIS_URL" to "redis://localhost:6379/0",
+            "TEST_COUNT" to 20
+        )
+    }
+}
+
 jib {
     from {
         image = "eclipse-temurin:21-jdk"
@@ -65,7 +91,7 @@ jib {
     to {
         setImage(providers.environmentVariable("IMAGE").orElse("sinytra/probe/gatherer"))
         tags = setOf("latest", version.toString())
-        auth { 
+        auth {
             setUsername(providers.environmentVariable("DOCKER_REG_USERNAME"))
             setPassword(providers.environmentVariable("DOCKER_REG_PASSWORD"))
         }
@@ -85,6 +111,6 @@ jib {
             "GAME_VERSION" to gameVersion,
             "WORK_DIR" to "/probe",
             "COMPATIBLE_VERSIONS" to compatibleGameVersions
-        ) 
+        )
     }
 }

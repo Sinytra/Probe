@@ -96,7 +96,9 @@ data class MRSearchResult(
 
 @Serializable
 data class ProjectSearchResult(
-    val projectId: String,
+    val id: String,
+    val name: String,
+    val iconUrl: String?,
     val slug: String,
     val versionId: String
 )
@@ -251,7 +253,7 @@ class ModrinthService(
             ?.body<MRSearchResults>()
             ?.hits
             ?.onEach { cacheProject(it.toMRProject()) }
-            ?.map { ProjectSearchResult(it.projectId, it.slug, it.versionId) }
+            ?.map { ProjectSearchResult(it.projectId, it.name, it.iconUrl, it.slug, it.versionId) }
     }
 
     private suspend fun cacheProject(project: MRProject) {
@@ -332,7 +334,7 @@ class ModrinthService(
                 gameVersions.indexOf(fileGameVersions.first())
             }
 
-    private suspend fun findProjectVersion(id: String): MRVersion? =
+    private suspend fun findProjectVersion(id: String): MRVersion =
         client.get(Versions.Id(id = id))
             .body<MRVersion>()
 
