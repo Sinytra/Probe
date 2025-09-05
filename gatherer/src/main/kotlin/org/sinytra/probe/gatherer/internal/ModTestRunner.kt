@@ -7,7 +7,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.sinytra.probe.core.platform.ModrinthPlatform
 import org.sinytra.probe.core.platform.ModrinthPlatform.Companion.FAPI_ID
@@ -17,8 +16,8 @@ import org.sinytra.probe.core.platform.ModrinthPlatform.Companion.LOADER_NEOFORG
 import org.sinytra.probe.core.platform.ProjectSearchResult
 import org.sinytra.probe.core.platform.ResolvedProject
 import org.sinytra.probe.core.service.SetupService
-import org.sinytra.probe.gatherer.*
-import org.sinytra.probe.gatherer.internal.TransformerInvoker.TransformResult
+import org.sinytra.probe.gatherer.SerializableTransformResult
+import org.sinytra.probe.gatherer.TestRunnerParams
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.nio.file.Path
@@ -26,13 +25,6 @@ import java.util.*
 import kotlin.io.path.*
 import kotlin.time.measureTime
 import kotlin.time.measureTimedValue
-
-@Serializable
-data class SerializableTransformResult(
-    val project: ProjectSearchResult,
-    val versionNumber: String,
-    val result: TransformResult?
-)
 
 class ModTestRunner(
     private val workingDir: Path,
@@ -81,7 +73,7 @@ class ModTestRunner(
             val testCandidates = candidates.filterNot { EXCLUDED_PROJECTS.contains(it.id) }.take(maxCount)
             val (results, duration) = measureTimedValue { runTests(testCandidates, resolvedDeps, missingDeps) }
 
-            ResultReporter.processResults(results, duration, workingDir, writeReport, params)
+            ResultReporter.processResults(results, duration, workingDir, writeReport, setup, params)
         }
     }
 

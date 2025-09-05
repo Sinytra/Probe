@@ -25,8 +25,8 @@ class SetupService(
 ) {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(SetupService::class.java)
-        private val NEO_MAVEN = "https://maven.neoforged.net/releases"
-        private val SINYTRA_MAVEN = "https://maven.sinytra.org"
+        private const val NEO_MAVEN = "https://maven.neoforged.net/releases"
+        private const val SINYTRA_MAVEN = "https://maven.sinytra.org"
     }
 
     fun installDependencies(): GameFiles {

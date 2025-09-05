@@ -3,7 +3,6 @@ package org.sinytra.probe.gatherer
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
-import org.sinytra.probe.gatherer.internal.SerializableTransformResult
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine.*
@@ -32,15 +31,15 @@ class RunRegressionTestsCommand : Callable<Int> {
         if (!results!!.exists())
             throw IllegalArgumentException("Missing old results file")
 
-        val oldResults: List<SerializableTransformResult> = results!!.inputStream().use(Json::decodeFromStream)
-        if (oldResults.isEmpty()) {
+        val oldResults: TestReport = results!!.inputStream().use(Json::decodeFromStream)
+        if (oldResults.results.isEmpty()) {
             LOGGER.error("Results file is empty, skipping tests")
             return 0
         }
 
-        val candidates = oldResults
+        val candidates = oldResults.results
             .filter { it.result != null }
-            .let { if (onlyFailed!!) it.filter { t -> !t.result!!.output.success } else oldResults }
+            .let { if (onlyFailed!!) it.filter { t -> !t.result!!.output.success } else oldResults.results }
             .map { it.project }
 
         val params = commonOptions!!.setupParams()

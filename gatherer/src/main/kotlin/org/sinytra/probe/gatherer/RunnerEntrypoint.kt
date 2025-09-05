@@ -25,9 +25,8 @@ class GathererMain {
     companion object {
         val LOGGER: Logger = LoggerFactory.getLogger(GathererMain::class.java)
 
-        private fun getVersion(): String {
-            val ver = GathererMain::class.java.getPackage().implementationVersion ?: System.getProperty("org.sinytra.probe.version")
-            return ver ?: "(unknown)"
+        fun getVersion(): String? {
+            return GathererMain::class.java.getPackage().implementationVersion ?: System.getProperty("org.sinytra.probe.version")
         }
     }
 
@@ -65,7 +64,7 @@ class GathererMain {
     var cleanup: Boolean? = null
 
     init {
-        LOGGER.info("Running Probe Transformer version {}", getVersion())
+        LOGGER.info("Running Probe Transformer version {}", getVersion() ?: "(unknown)")
     }
 
     fun setupParams(): TestRunnerParams {

@@ -1,16 +1,21 @@
 package org.sinytra.probe.gatherer.internal
 
+import kotlinx.datetime.Clock
 import kotlinx.serialization.json.Json
 import net.steppschuh.markdowngenerator.table.Table
 import net.steppschuh.markdowngenerator.text.TextBuilder
 import net.steppschuh.markdowngenerator.text.code.Code
 import net.steppschuh.markdowngenerator.text.emphasis.BoldText
+import org.sinytra.probe.core.service.SetupService
 import org.sinytra.probe.gatherer.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.nio.file.FileSystems
 import java.nio.file.Path
-import kotlin.io.path.div
-import kotlin.io.path.writeText
+import java.security.MessageDigest
+import java.util.jar.Attributes
+import java.util.jar.Manifest
+import kotlin.io.path.*
 import kotlin.time.Duration
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
@@ -18,7 +23,7 @@ import kotlin.time.toDuration
 object ResultReporter {
     private val LOGGER: Logger = LoggerFactory.getLogger("ResultReporter")
 
-    fun processResults(results: List<SerializableTransformResult>, duration: Duration, resultDir: Path, writeReport: Boolean, params: TestRunnerParams) {
+    fun processResults(results: List<SerializableTransformResult>, duration: Duration, resultDir: Path, writeReport: Boolean, setup: SetupService, params: TestRunnerParams) {
         val compatible = results.count { it.result?.output?.success == true }
         val incompatible = results.count { it.result?.output?.success == false }
         val errored = results.count { it.result?.errors == true }
@@ -32,7 +37,18 @@ object ResultReporter {
         LOGGER.info("==============================")
 
         val resultsFile = resultDir / "results.json"
-        resultsFile.writeText(Json.encodeToString(results))
+
+        val toolchainInfo = TestToolchain(
+            getImplementationVersion(setup.getTransformLibPath()),
+            getSHA256(setup.getTransformLibPath())
+        )
+        val probeInfo = TestToolchain(
+            GathererMain.getVersion(),
+            getSHA256(Path.of(javaClass.protectionDomain.codeSource.location.toURI()))
+        )
+
+        val report = TestReport(results, toolchainInfo, probeInfo, duration.inWholeSeconds, Clock.System.now())
+        resultsFile.writeText(Json.encodeToString(report))
 
         if (writeReport) {
             val reportFile = resultDir / "report.md"
@@ -111,5 +127,28 @@ object ResultReporter {
             .text("Compatible game versions: ${params.compatibleGameVersions.joinToString(separator = ", ", transform = { Code(it).toString() })}").newLine()
 
         dest.writeText(result.build().toString())
+    }
+
+    private fun getSHA256(path: Path): String? {
+        if (!path.isRegularFile()) return null
+
+        val hash = MessageDigest.getInstance("SHA-256")
+        val bytes = path.readBytes()
+        val result = hash.digest(bytes)
+
+        return result.fold("") { str, it -> str + "%02x".format(it) }
+    }
+
+    private fun getImplementationVersion(path: Path): String? {
+        if (!path.isRegularFile()) throw IllegalArgumentException("Path must be a regular file")
+
+        FileSystems.newFileSystem(path).use {
+            val mfPath = it.getPath("META-INF", "MANIFEST.MF")
+            if (mfPath.exists() && mfPath.isRegularFile()) {
+                val manifest = mfPath.inputStream().use(::Manifest)
+                return manifest.mainAttributes.getValue(Attributes.Name.IMPLEMENTATION_VERSION)
+            }
+        }
+        return null
     }
 }

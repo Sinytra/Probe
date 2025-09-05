@@ -17,8 +17,6 @@ kotlin {
     jvmToolchain(21)
 }
 
-val transfomer: Configuration by configurations.creating
-
 application {
     mainClass = "org.sinytra.probe.gatherer.RunnerEntrypointKt"
 
@@ -37,7 +35,6 @@ repositories {
 
 dependencies {
     implementation(project(":core"))
-    transfomer(libs.connector.tranformer)
 
     implementation(platform(libs.log4j.bom))
     implementation(libs.log4j.core)
@@ -80,8 +77,16 @@ tasks {
             "COMPATIBLE_VERSIONS" to compatibleGameVersions,
 
             "REDIS_URL" to "redis://localhost:6379/0",
-            "TEST_COUNT" to 20
+            "TEST_COUNT" to 10
         )
+    }
+    
+    jar {
+        manifest {
+            attributes(
+                "Implementation-Version" to project.version,
+            )
+        }
     }
 
     register("publishDocker") {
