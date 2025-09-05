@@ -51,7 +51,7 @@ jobs:
             probe/candidates.json
             probe/dump.rdb
           restore-keys: |
-            ${{ runner.os }}-cache-
+            ${{ runner.os }}-cache
 
       - name: Restore redis data
         if: ${{ hashFiles('probe/dump.rdb') != '' }}
