@@ -13,16 +13,20 @@ data class SerializableTransformResult(
 )
 
 @Serializable
-data class TestToolchain(
-    val version: String?,
-    val sha256: String?
+data class TestEnvironment(
+    val transformerVersion: String?,
+    val transformerHash: String?,
+    val runnerVersion: String?,
+    val neoFormRuntimeVersion: String,
+    val neoForgeVersion: String,
+    val gameVersion: String,
+    val compatibleGameVersions: List<String>
 )
 
 @Serializable
 data class TestReport(
     val results: List<SerializableTransformResult>,
-    val toolchain: TestToolchain,
-    val runner: TestToolchain,
+    val environment: TestEnvironment,
     val durationSeconds: Long,
     val testedAt: Instant
 )

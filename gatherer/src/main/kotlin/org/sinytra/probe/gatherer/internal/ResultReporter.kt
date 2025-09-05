@@ -38,16 +38,17 @@ object ResultReporter {
 
         val resultsFile = resultDir / "results.json"
 
-        val toolchainInfo = TestToolchain(
+        val environment = TestEnvironment(
             getImplementationVersion(setup.getTransformLibPath()),
-            getSHA256(setup.getTransformLibPath())
-        )
-        val probeInfo = TestToolchain(
+            getSHA256(setup.getTransformLibPath()),
             GathererMain.getVersion(),
-            getSHA256(Path.of(javaClass.protectionDomain.codeSource.location.toURI()))
+            params.nfrtVersion,
+            params.neoForgeVersion,
+            params.gameVersion,
+            params.compatibleGameVersions
         )
 
-        val report = TestReport(results, toolchainInfo, probeInfo, duration.inWholeSeconds, Clock.System.now())
+        val report = TestReport(results, environment, duration.inWholeSeconds, Clock.System.now())
         resultsFile.writeText(Json.encodeToString(report))
 
         if (writeReport) {

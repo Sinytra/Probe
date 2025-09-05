@@ -331,7 +331,15 @@ class ModTestRunner(
     }
 
     private fun readCandidatesFile(count: Int, file: Path): List<ProjectSearchResult>? {
-        return file.takeIf { it.exists() }?.readText()?.let { Json.decodeFromString<List<ProjectSearchResult>>(it) }
+        return file.takeIf { it.exists() }?.readText()
+            ?.let { 
+                try {
+                    Json.decodeFromString<List<ProjectSearchResult>>(it)
+                } catch (e: Exception) {
+                    LOGGER.error("Error while parsing candidates file, discarding", e)
+                    null
+                }
+            }
             ?.let {
                 if (it.size < count) {
                     LOGGER.info("{} Discarding candidate cache, was {}, expected {}", ICON_TRASH, it.size, count)
