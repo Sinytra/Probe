@@ -40,6 +40,7 @@ class ModrinthPlatform(
     companion object {
         const val FAPI_ID: String = "P7dR8mSH"
         const val FFAPI_ID: String = "Aqlf1Shp"
+        const val FFAPI_SLUG: String = "forgified-fabric-api"
         const val LOADER_FABRIC = "fabric"
         const val LOADER_NEOFORGE = "neoforge"
 

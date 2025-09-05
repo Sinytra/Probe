@@ -20,7 +20,9 @@ kotlin {
 application {
     mainClass = "org.sinytra.probe.gatherer.RunnerEntrypointKt"
 
-    applicationDefaultJvmArgs = listOf("-Dorg.sinytra.probe.version=$version")
+    applicationDefaultJvmArgs = listOf(
+        "-Dorg.sinytra.probe.version=$version"
+    )
 }
 
 repositories {

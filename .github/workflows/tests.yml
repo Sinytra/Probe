@@ -44,7 +44,7 @@ jobs:
           bucket: ${{ secrets.S3_BUCKET_NAME }}
           use-fallback: false
 
-          key: ${{ runner.os }}-cache-${{ env.TEST_COUNT }}
+          key: ${{ runner.os }}-cache
           path: |
             probe/.setup
             probe/mods

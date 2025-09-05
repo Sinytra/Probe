@@ -8,9 +8,11 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.serialization.json.Json
+import org.sinytra.probe.core.platform.CleanupService
 import org.sinytra.probe.core.platform.ModrinthPlatform
 import org.sinytra.probe.core.platform.ModrinthPlatform.Companion.FAPI_ID
 import org.sinytra.probe.core.platform.ModrinthPlatform.Companion.FFAPI_ID
+import org.sinytra.probe.core.platform.ModrinthPlatform.Companion.FFAPI_SLUG
 import org.sinytra.probe.core.platform.ModrinthPlatform.Companion.LOADER_FABRIC
 import org.sinytra.probe.core.platform.ModrinthPlatform.Companion.LOADER_NEOFORGE
 import org.sinytra.probe.core.platform.ProjectSearchResult
@@ -30,6 +32,7 @@ class ModTestRunner(
     private val workingDir: Path,
     private val setup: SetupService,
     private val modrinth: ModrinthPlatform,
+    private val cleanupService: CleanupService,
     private val params: TestRunnerParams
 ) {
     companion object {
@@ -74,6 +77,16 @@ class ModTestRunner(
             val (results, duration) = measureTimedValue { runTests(testCandidates, resolvedDeps, missingDeps) }
 
             ResultReporter.processResults(results, duration, workingDir, writeReport, setup, params)
+
+            val flatDeps = resolvedDeps.flattenRecursively { it.dependencies }
+                .mapNotNull {
+                    val slug = modrinth.getProject(it.version.projectId)?.slug ?: return@mapNotNull null
+                    return@mapNotNull CleanupService.ProjectCoordinates(it.version.projectId, slug, it.version.versionId)
+                }
+            cleanupService.cleanupFiles(
+                candidates.map { CleanupService.ProjectCoordinates(it.id, it.slug, it.versionId) } + flatDeps,
+                listOf("output", "$FFAPI_SLUG-$FFAPI_ID")
+            )
         }
     }
 

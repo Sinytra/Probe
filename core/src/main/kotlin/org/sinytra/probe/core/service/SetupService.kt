@@ -36,11 +36,11 @@ class SetupService(
         val cleanArtifact = outputDir / "clean.jar"
         val compiledArtifact = outputDir / "compiled.jar"
 
-        val neoUniversal = baseDir / "neo-universal.jar"
+        val neoUniversal = baseDir / "neoforge-$neoForgeVersion-universal.jar"
         val neoUniversalUrl = getMavenUrl(NEO_MAVEN, "net.neoforged", "neoforge", neoForgeVersion, "universal")
         downloadFile(neoUniversalUrl, neoUniversal)
 
-        val runtime = baseDir / "runtime.jar"
+        val runtime = baseDir / "neoform-runtime-$nfrtVersion-all.jar"
         val nfrtUrl = getMavenUrl(NEO_MAVEN, "net.neoforged", "neoform-runtime", nfrtVersion, "all")
         downloadFile(nfrtUrl, runtime)
 

@@ -1,6 +1,7 @@
 package org.sinytra.probe.gatherer
 
 import io.lettuce.core.RedisClient
+import org.sinytra.probe.core.platform.CleanupService
 import org.sinytra.probe.core.platform.ModrinthPlatform
 import org.sinytra.probe.core.platform.PlatformCache
 import org.sinytra.probe.core.service.SetupService
@@ -45,11 +46,13 @@ fun createTestRunner(params: TestRunnerParams): ModTestRunner {
     val cache = PlatformCache(redisConnection)
 
     val modrinthService = ModrinthPlatform(workDir / "mods", cache)
+    val cleanupService = CleanupService(workDir)
 
     val gatherer = ModTestRunner(
         workDir,
         setupService,
         modrinthService,
+        cleanupService,
         params
     )
 
