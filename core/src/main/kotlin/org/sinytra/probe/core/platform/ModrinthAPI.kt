@@ -20,7 +20,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNamingStrategy
-import org.sinytra.probe.core.model.ProjectPlatform
+import org.sinytra.probe.base.db.ProjectPlatform
 import java.nio.file.Path
 
 private const val MR_API_HOST: String = "api.modrinth.com"

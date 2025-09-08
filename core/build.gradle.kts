@@ -18,6 +18,7 @@ repositories {
 
 dependencies {
     transfomer(libs.connector.tranformer)
+    api(project(":base"))
 
     implementation(platform(libs.log4j.bom))
     implementation(libs.log4j.core)

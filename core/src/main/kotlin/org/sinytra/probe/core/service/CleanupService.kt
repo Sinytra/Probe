@@ -1,11 +1,14 @@
 @file:OptIn(ExperimentalPathApi::class)
 
-package org.sinytra.probe.core.platform
+package org.sinytra.probe.core.service
 
 import org.slf4j.LoggerFactory
 import java.nio.file.FileVisitResult
 import java.nio.file.Path
-import kotlin.io.path.*
+import kotlin.io.path.ExperimentalPathApi
+import kotlin.io.path.deleteRecursively
+import kotlin.io.path.div
+import kotlin.io.path.visitFileTree
 
 class CleanupService(private val workDir: Path) {
     companion object {

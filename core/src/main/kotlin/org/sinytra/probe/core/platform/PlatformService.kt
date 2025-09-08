@@ -1,6 +1,6 @@
 package org.sinytra.probe.core.platform
 
-import org.sinytra.probe.core.model.ProjectPlatform
+import org.sinytra.probe.base.db.ProjectPlatform
 import java.nio.file.Path
 import kotlin.io.path.div
 

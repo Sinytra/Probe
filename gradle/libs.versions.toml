@@ -9,6 +9,8 @@ kotlinx-coroutines-version = "1.10.2"
 log4j-version = "2.24.3"
 kord-version = "0.15.0"
 transformer-version = "2.0.0-beta.8+1.21.1"
+kotlinx-datetime-version = "0.6.2"
+kotlinx-json-version = "1.8.1"
 kotlinx-hocon-version = "1.8.1"
 jib-version = "3.4.5"
 gradleutils-version = "3.0.0"
@@ -40,6 +42,8 @@ ktor-client-resources = { module = "io.ktor:ktor-client-resources", version.ref 
 kotlinx-coroutines-reactive = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-reactive", version.ref = "kotlinx-coroutines-version" }
 kord-core = { module = "dev.kord:kord-core", version.ref = "kord-version" }
 connector-tranformer = { module = "org.sinytra.connector:transformer", version.ref = "transformer-version" }
+kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime-version" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-json-version" }
 kotlinx-serialization-hocon = { module = "org.jetbrains.kotlinx:kotlinx-serialization-hocon", version.ref = "kotlinx-hocon-version" }
 markdown-generator = { module = "com.github.Steppschuh:Java-Markdown-Generator", version.ref = "md-gen-version" }
 picocli = { module = "info.picocli:picocli", version.ref = "picocli-version" }

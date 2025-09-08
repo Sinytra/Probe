@@ -4,12 +4,9 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.update
-import org.sinytra.probe.core.db.ModDAO
-import org.sinytra.probe.core.db.ModTable
-import org.sinytra.probe.core.db.ProjectDAO
-import org.sinytra.probe.core.db.ProjectTable
-import org.sinytra.probe.core.db.daoToModel
-import org.sinytra.probe.core.db.suspendTransaction
+import org.sinytra.probe.base.db.Project
+import org.sinytra.probe.base.db.ProjectPlatform
+import org.sinytra.probe.core.db.*
 
 interface ProjectRepository {
     suspend fun allProjects(): List<Project>
@@ -21,11 +18,11 @@ interface ProjectRepository {
 
 class PostgresProjectRepository : ProjectRepository {
     override suspend fun allProjects(): List<Project> = suspendTransaction {
-        ProjectDAO.Companion.all().map(::daoToModel)
+        ProjectDAO.all().map(::daoToModel)
     }
 
     override suspend fun projectByPlatformAndId(platform: ProjectPlatform, id: String): Project? = suspendTransaction {
-        ProjectDAO.Companion
+        ProjectDAO
             .find {
                 (ProjectTable.platform eq platform.toString()) and
                         (ProjectTable.projectId eq id)
@@ -36,8 +33,8 @@ class PostgresProjectRepository : ProjectRepository {
     }
 
     override suspend fun addProject(project: Project): Project = suspendTransaction {
-        val dbMod = ModDAO.Companion.find { ModTable.modid eq project.modid }.single()
-        ProjectDAO.Companion.new {
+        val dbMod = ModDAO.find { ModTable.modid eq project.modid }.single()
+        ProjectDAO.new {
             platform = project.platform.toString()
             projectId = project.id
             mod = dbMod
@@ -52,7 +49,7 @@ class PostgresProjectRepository : ProjectRepository {
     }
 
     override suspend fun assignModToProject(project: Project, modObj: Mod): Unit = suspendTransaction {
-        val dbMod = ModDAO.Companion.find { ModTable.modid eq modObj.modid }.single()
+        val dbMod = ModDAO.find { ModTable.modid eq modObj.modid }.single()
         ProjectTable.update({ ProjectTable.id eq project.internalId }) {
             it[mod] = dbMod.id
         }

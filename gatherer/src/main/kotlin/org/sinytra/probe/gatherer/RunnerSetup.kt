@@ -1,7 +1,7 @@
 package org.sinytra.probe.gatherer
 
 import io.lettuce.core.RedisClient
-import org.sinytra.probe.core.platform.CleanupService
+import org.sinytra.probe.core.service.CleanupService
 import org.sinytra.probe.core.platform.ModrinthPlatform
 import org.sinytra.probe.core.platform.PlatformCache
 import org.sinytra.probe.core.service.SetupService

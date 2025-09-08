@@ -10,10 +10,9 @@ import org.sinytra.probe.core.model.TestResult
 
 object TestResultTable : IntIdTable("test_result") {
     val project = reference("project", ProjectTable)
+    val testEnvironment = reference("test_environment", TestEnvironmentTable)
 
     val versionId = varchar("version_id", 255)
-    val gameVersion = varchar("game_version", 255)
-    val toolchainVersion = varchar("toolchain_version", 255)
     val passing = bool("passing")
     val createdAt = datetime("created_at").defaultExpression(CurrentDateTime)
 }
@@ -22,12 +21,11 @@ class TestResultDAO(id: EntityID<Int>) : IntEntity(id) {
     companion object : IntEntityClass<TestResultDAO>(TestResultTable)
 
     var versionId by TestResultTable.versionId
-    var gameVersion by TestResultTable.gameVersion
-    var toolchainVersion by TestResultTable.toolchainVersion
     var passing by TestResultTable.passing
     var createdAt by TestResultTable.createdAt
 
     var project by ProjectDAO referencedOn TestResultTable.project
+    var testEnvironment by TestEnvironmentDAO referencedOn TestResultTable.testEnvironment
 }
 
 fun daoToModel(dao: TestResultDAO) = TestResult(
@@ -35,8 +33,7 @@ fun daoToModel(dao: TestResultDAO) = TestResult(
     dao.project.mod.modid,
     dao.project.id.value,
     dao.versionId,
-    dao.gameVersion,
-    dao.toolchainVersion,
     dao.passing,
+    dao.testEnvironment.id.value,
     dao.createdAt
 )

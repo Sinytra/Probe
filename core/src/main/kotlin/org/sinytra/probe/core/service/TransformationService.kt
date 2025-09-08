@@ -4,7 +4,7 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
-import org.sinytra.probe.core.model.ProjectPlatform
+import org.sinytra.probe.base.db.ProjectPlatform
 import org.sinytra.probe.core.platform.*
 import org.slf4j.LoggerFactory
 import java.lang.ProcessBuilder.Redirect

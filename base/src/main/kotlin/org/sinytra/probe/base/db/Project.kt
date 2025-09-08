@@ -1,4 +1,4 @@
-package org.sinytra.probe.core.model
+package org.sinytra.probe.base.db
 
 import kotlinx.serialization.Serializable
 

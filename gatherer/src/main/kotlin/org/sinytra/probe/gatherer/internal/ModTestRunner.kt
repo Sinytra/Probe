@@ -8,7 +8,7 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.serialization.json.Json
-import org.sinytra.probe.core.platform.CleanupService
+import org.sinytra.probe.core.service.CleanupService
 import org.sinytra.probe.core.platform.ModrinthPlatform
 import org.sinytra.probe.core.platform.ModrinthPlatform.Companion.FAPI_ID
 import org.sinytra.probe.core.platform.ModrinthPlatform.Companion.FFAPI_ID

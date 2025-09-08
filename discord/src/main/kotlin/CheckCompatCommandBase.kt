@@ -6,6 +6,10 @@ import dev.kord.core.behavior.interaction.response.respond
 import dev.kord.rest.builder.message.embed
 import kotlinx.datetime.format.FormatStringsInDatetimeFormats
 import kotlinx.datetime.toJavaLocalDateTime
+import org.sinytra.probe.base.ResultType
+import org.sinytra.probe.base.SkippedResponseBody
+import org.sinytra.probe.base.TestResponseBody
+import org.sinytra.probe.base.UnavailableResponseBody
 import org.slf4j.LoggerFactory
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -102,12 +106,12 @@ abstract class CheckCompatCommandBase {
                 }
                 field {
                     name = "Game version"
-                    value = result.gameVersion
+                    value = result.environment.gameVersion
                     inline = true
                 }
                 field {
                     name = "Connector version"
-                    value = result.toolchainVersion
+                    value = result.environment.connectorVersion
                 }
                 field {
                     name = "Last tested at"

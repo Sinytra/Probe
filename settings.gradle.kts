@@ -14,7 +14,4 @@ pluginManagement {
 
 rootProject.name = "Probe"
 
-include("core")
-include("discord")
-include("gatherer")
-include("service")
+include("base", "core", "discord", "gatherer", "service")

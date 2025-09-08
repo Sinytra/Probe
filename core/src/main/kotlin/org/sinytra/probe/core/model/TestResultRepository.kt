@@ -3,33 +3,27 @@ package org.sinytra.probe.core.model
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.deleteWhere
-import org.sinytra.probe.core.db.ModTable
-import org.sinytra.probe.core.db.ProjectDAO
-import org.sinytra.probe.core.db.ProjectTable
-import org.sinytra.probe.core.db.TestResultDAO
-import org.sinytra.probe.core.db.TestResultTable
-import org.sinytra.probe.core.db.daoToModel
-import org.sinytra.probe.core.db.suspendTransaction
+import org.sinytra.probe.base.db.Project
+import org.sinytra.probe.core.db.*
 
 data class BaseTestResult(
     val project: Project,
     val versionId: String,
-    val gameVersion: String,
-    val toolchainVersion: String,
-    val passing: Boolean
+    val passing: Boolean,
+    val testEnvironment: TestEnvironment
 )
 
 interface TestResultRepository {
     suspend fun allTestResults(): List<TestResult>
     suspend fun testResultByModid(modid: String): TestResult?
-    suspend fun getTestResultFor(modid: String, gameVersion: String, toolchainVersion: String): TestResult?
+    suspend fun getTestResultFor(modid: String, testEnvironment: TestEnvironment): TestResult?
     suspend fun addTestResult(result: BaseTestResult): TestResult
     suspend fun removeTestResult(result: TestResult): Boolean
 }
 
 class PostgresTestResultRepository : TestResultRepository {
     override suspend fun allTestResults(): List<TestResult> = suspendTransaction {
-        TestResultDAO.Companion.all().map(::daoToModel)
+        TestResultDAO.all().map(::daoToModel)
     }
 
     override suspend fun testResultByModid(modid: String): TestResult? = suspendTransaction {
@@ -43,14 +37,12 @@ class PostgresTestResultRepository : TestResultRepository {
             .firstOrNull()
     }
 
-    override suspend fun getTestResultFor(modid: String, gameVersion: String, toolchainVersion: String): TestResult? = suspendTransaction {
+    override suspend fun getTestResultFor(modid: String, testEnvironment: TestEnvironment): TestResult? = suspendTransaction {
         TestResultTable
             .innerJoin(ProjectTable).innerJoin(ModTable)
             .select(TestResultTable.columns)
             .where {
-                (ModTable.modid eq modid) and
-                        (TestResultTable.gameVersion eq gameVersion) and
-                        (TestResultTable.toolchainVersion eq toolchainVersion)
+                (ModTable.modid eq modid) and (TestResultTable.testEnvironment eq testEnvironment.id)
             }
             .limit(1)
             .map(TestResultDAO.Companion::wrapRow)
@@ -59,13 +51,13 @@ class PostgresTestResultRepository : TestResultRepository {
     }
 
     override suspend fun addTestResult(result: BaseTestResult): TestResult = suspendTransaction {
-        val dbProject = ProjectDAO.Companion.find { ProjectTable.id eq result.project.internalId }.single()
-        TestResultDAO.Companion.new {
+        val dbProject = ProjectDAO.find { ProjectTable.id eq result.project.internalId }.single()
+        val dbTestEnvironment = TestEnvironmentDAO.find { TestEnvironmentTable.id eq result.testEnvironment.id }.single()
+        TestResultDAO.new {
             project = dbProject
             versionId = result.versionId
-            gameVersion = result.gameVersion
-            toolchainVersion = result.toolchainVersion
             passing = result.passing
+            testEnvironment = dbTestEnvironment
         }.let(::daoToModel)
     }
 

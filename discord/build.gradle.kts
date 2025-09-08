@@ -13,6 +13,7 @@ repositories {
 }
 
 dependencies {
+    implementation(project(":base"))
     implementation(libs.kord.core)
     implementation(libs.kotlinx.serialization.hocon)
 

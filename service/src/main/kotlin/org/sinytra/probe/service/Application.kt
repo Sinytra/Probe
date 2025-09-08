@@ -8,8 +8,10 @@ import org.sinytra.probe.core.db.ProjectTable
 import org.sinytra.probe.core.db.TestResultTable
 import org.sinytra.probe.core.model.PostgresModRepository
 import org.sinytra.probe.core.model.PostgresProjectRepository
+import org.sinytra.probe.core.model.PostgresTestEnvironmentRepository
 import org.sinytra.probe.core.model.PostgresTestResultRepository
-import org.sinytra.probe.core.model.ProjectPlatform
+import org.sinytra.probe.base.db.ProjectPlatform
+import org.sinytra.probe.core.db.TestEnvironmentTable
 import org.sinytra.probe.core.platform.GlobalPlatformService
 import org.sinytra.probe.core.platform.ModrinthPlatform
 import org.sinytra.probe.core.platform.PlatformCache
@@ -38,6 +40,7 @@ fun Application.module() {
 
     val gameFiles = setup.installDependencies()
 
+    val testEnvironmentRepository = PostgresTestEnvironmentRepository()
     val modRepository = PostgresModRepository()
     val projectRepository = PostgresProjectRepository()
     val testResultsRepository = PostgresTestResultRepository()
@@ -48,13 +51,15 @@ fun Application.module() {
     val platforms = GlobalPlatformService(mapOf(ProjectPlatform.MODRINTH to modrinth))
 
     val transformation = TransformationService(baseStoragePath, platforms, gameFiles, setup)
-    val persistence = PersistenceService(modRepository, projectRepository, testResultsRepository)
+    val persistence = PersistenceService(modRepository, projectRepository, testResultsRepository, testEnvironmentRepository)
+    val envConfig = EnvironmentConfig(transformerVersion, gameVersion, neoForgeVersion)
 
     configureSerialization()
     configureDatabases()
-    configureRouting(platforms, transformation, gameVersion, transformerVersion, persistence)
+    configureRouting(platforms, transformation, envConfig, persistence)
 
     transaction {
+        SchemaUtils.create(TestEnvironmentTable)
         SchemaUtils.create(ModTable)
         SchemaUtils.create(ProjectTable)
         SchemaUtils.create(TestResultTable)

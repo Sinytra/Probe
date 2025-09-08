@@ -10,55 +10,17 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.*
-import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNamingStrategy
-
-interface ResponseBase {
-    val type: ResultType
-}
+import org.sinytra.probe.base.ResponseBase
+import org.sinytra.probe.base.ResultType
+import org.sinytra.probe.base.SkippedResponseBody
+import org.sinytra.probe.base.TestResponseBody
+import org.sinytra.probe.base.UnavailableResponseBody
 
 @Serializable
 data class ResponseBaseData(
-    override val type: ResultType
-) : ResponseBase
-
-// TODO Shared types
-@Serializable
-enum class ResultType {
-    TESTED,
-    NATIVE,
-    UNAVAILABLE
-}
-
-@Serializable
-data class TestResponseBody(
-    val modid: String,
-    val iconUrl: String,
-    val projectUrl: String,
-    val version: String,
-    val gameVersion: String,
-    val toolchainVersion: String,
-    val passing: Boolean,
-    val createdAt: LocalDateTime,
-    override val type: ResultType = ResultType.TESTED
-) : ResponseBase
-
-@Serializable
-data class SkippedResponseBody(
-    val slug: String,
-    val iconUrl: String,
-    val projectUrl: String,
-    val gameVersion: String,
-    override val type: ResultType = ResultType.NATIVE
-) : ResponseBase
-
-@Serializable
-data class UnavailableResponseBody(
-    val slug: String,
-    val loader: String,
-    val gameVersion: String,
     override val type: ResultType
 ) : ResponseBase
 

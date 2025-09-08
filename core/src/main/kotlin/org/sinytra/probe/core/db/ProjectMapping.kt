@@ -4,8 +4,8 @@ import org.jetbrains.exposed.dao.IntEntity
 import org.jetbrains.exposed.dao.IntEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
 import org.jetbrains.exposed.dao.id.IntIdTable
-import org.sinytra.probe.core.model.Project
-import org.sinytra.probe.core.model.ProjectPlatform
+import org.sinytra.probe.base.db.Project
+import org.sinytra.probe.base.db.ProjectPlatform
 
 object ProjectTable : IntIdTable("project") {
     val mod = reference("mod", ModTable)

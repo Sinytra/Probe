@@ -16,11 +16,11 @@ interface ModRepository {
 
 class PostgresModRepository : ModRepository {
     override suspend fun allMods(): List<Mod> = suspendTransaction {
-        ModDAO.Companion.all().map(::daoToModel)
+        ModDAO.all().map(::daoToModel)
     }
 
     override suspend fun modByModid(modid: String): Mod? = suspendTransaction {
-        ModDAO.Companion
+        ModDAO
             .find { (ModTable.modid eq modid) }
             .limit(1)
             .map(::daoToModel)
@@ -28,7 +28,7 @@ class PostgresModRepository : ModRepository {
     }
 
     override suspend fun addMod(mod: Mod): Mod = suspendTransaction {
-        ModDAO.Companion.new {
+        ModDAO.new {
             modid = mod.modid
         }.let(::daoToModel)
     }
