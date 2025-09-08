@@ -5,6 +5,7 @@ import org.sinytra.probe.base.db.Project
 
 @Serializable
 data class Mod(
-    val modid: String,
+    val id: Long,
+    val modid: String?,
     val projects: List<Project>
 )

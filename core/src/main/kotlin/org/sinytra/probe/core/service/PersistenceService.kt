@@ -19,15 +19,15 @@ class PersistenceService(
 
     suspend fun getExistingResult(project: PlatformProject, testEnvironment: TestEnvironment): TestResult? {
         val dbProject = projects.projectByPlatformAndId(project.platform, project.id) ?: return null
-        return results.getTestResultFor(dbProject.modid, testEnvironment)
+        return results.getTestResultFor(dbProject.internalModId, testEnvironment)
     }
 
     // TODO Account for failed transformations
     suspend fun saveResult(project: PlatformProject, modid: String, versionId: String, passing: Boolean, testEnvironment: TestEnvironment): TestResult {
-        val mod = mods.modByModid(modid) ?: mods.addMod(Mod(modid = modid, projects = listOf()))
+        val mod = mods.modByModid(modid) ?: mods.addMod(Mod(id = 0, modid = modid, projects = listOf()))
 
         val dbProject = projects.projectByPlatformAndId(project.platform, project.id)
-            ?: projects.addProject(Project(platform = project.platform, id = project.id, modid = mod.modid))
+            ?: projects.addProject(Project(platform = project.platform, id = project.id, internalModId = mod.id, modid = mod.modid))
 
         if (dbProject !in mod.projects) {
             projects.assignModToProject(dbProject, mod)

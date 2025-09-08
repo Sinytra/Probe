@@ -11,6 +11,9 @@ enum class ProjectPlatform {
 data class Project(
     val platform: ProjectPlatform,
     val id: String,
-    val modid: String,
-    val internalId: Int? = null
+
+    val internalModId: Long,
+    val modid: String?,
+
+    val internalId: Long? = null
 )

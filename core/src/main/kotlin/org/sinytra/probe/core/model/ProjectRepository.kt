@@ -12,7 +12,7 @@ interface ProjectRepository {
     suspend fun allProjects(): List<Project>
     suspend fun projectByPlatformAndId(platform: ProjectPlatform, id: String): Project?
     suspend fun addProject(project: Project): Project
-    suspend fun removeProject(id: Int): Boolean
+    suspend fun removeProject(id: Long): Boolean
     suspend fun assignModToProject(project: Project, mod: Mod)
 }
 
@@ -41,7 +41,7 @@ class PostgresProjectRepository : ProjectRepository {
         }.let(::daoToModel)
     }
 
-    override suspend fun removeProject(id: Int): Boolean = suspendTransaction {
+    override suspend fun removeProject(id: Long): Boolean = suspendTransaction {
         val rowsDeleted = ProjectTable.deleteWhere {
             ProjectTable.id eq id
         }

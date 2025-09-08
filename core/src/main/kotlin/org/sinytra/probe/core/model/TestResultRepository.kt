@@ -16,7 +16,7 @@ data class BaseTestResult(
 interface TestResultRepository {
     suspend fun allTestResults(): List<TestResult>
     suspend fun testResultByModid(modid: String): TestResult?
-    suspend fun getTestResultFor(modid: String, testEnvironment: TestEnvironment): TestResult?
+    suspend fun getTestResultFor(modId: Long, testEnvironment: TestEnvironment): TestResult?
     suspend fun addTestResult(result: BaseTestResult): TestResult
     suspend fun removeTestResult(result: TestResult): Boolean
 }
@@ -37,12 +37,12 @@ class PostgresTestResultRepository : TestResultRepository {
             .firstOrNull()
     }
 
-    override suspend fun getTestResultFor(modid: String, testEnvironment: TestEnvironment): TestResult? = suspendTransaction {
+    override suspend fun getTestResultFor(modId: Long, testEnvironment: TestEnvironment): TestResult? = suspendTransaction {
         TestResultTable
             .innerJoin(ProjectTable).innerJoin(ModTable)
             .select(TestResultTable.columns)
             .where {
-                (ModTable.modid eq modid) and (TestResultTable.testEnvironment eq testEnvironment.id)
+                (ModTable.id eq modId) and (TestResultTable.testEnvironment eq testEnvironment.id)
             }
             .limit(1)
             .map(TestResultDAO.Companion::wrapRow)

@@ -1,17 +1,17 @@
 package org.sinytra.probe.core.db
 
-import org.jetbrains.exposed.dao.IntEntity
-import org.jetbrains.exposed.dao.IntEntityClass
+import org.jetbrains.exposed.dao.LongEntity
+import org.jetbrains.exposed.dao.LongEntityClass
 import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.dao.id.IntIdTable
+import org.jetbrains.exposed.dao.id.LongIdTable
 import org.sinytra.probe.core.model.Mod
 
-object ModTable : IntIdTable("mod") {
-    val modid = varchar("modid", 255).uniqueIndex()
+object ModTable : LongIdTable("mod") {
+    val modid = varchar("modid", 255).nullable().uniqueIndex()
 }
 
-class ModDAO(id: EntityID<Int>) : IntEntity(id) {
-    companion object : IntEntityClass<ModDAO>(ModTable)
+class ModDAO(id: EntityID<Long>) : LongEntity(id) {
+    companion object : LongEntityClass<ModDAO>(ModTable)
 
     var modid by ModTable.modid
 
@@ -19,6 +19,7 @@ class ModDAO(id: EntityID<Int>) : IntEntity(id) {
 }
 
 fun daoToModel(dao: ModDAO) = Mod(
+    dao.id.value,
     dao.modid,
     dao.projects.map(::daoToModel)
 )
