@@ -9,6 +9,7 @@ import org.sinytra.probe.core.db.suspendTransaction
 
 interface ModRepository {
     suspend fun allMods(): List<Mod>
+    suspend fun modById(id: Long): Mod?
     suspend fun modByModid(modid: String): Mod?
     suspend fun addMod(mod: Mod): Mod
     suspend fun removeMod(modid: String): Boolean
@@ -17,6 +18,10 @@ interface ModRepository {
 class PostgresModRepository : ModRepository {
     override suspend fun allMods(): List<Mod> = suspendTransaction {
         ModDAO.all().map(::daoToModel)
+    }
+    
+    override suspend fun modById(id: Long): Mod? = suspendTransaction {
+        ModDAO.findById(id)?.let(::daoToModel)
     }
 
     override suspend fun modByModid(modid: String): Mod? = suspendTransaction {

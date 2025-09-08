@@ -27,6 +27,5 @@ fun daoToModel(dao: ProjectDAO) = Project(
     ProjectPlatform.valueOf(dao.platform),
     dao.projectId,
     dao.mod.id.value,
-    dao.mod.modid,
-    dao.id.value,
+    dao.id.value
 )

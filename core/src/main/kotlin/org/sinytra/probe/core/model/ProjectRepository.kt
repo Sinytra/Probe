@@ -33,7 +33,7 @@ class PostgresProjectRepository : ProjectRepository {
     }
 
     override suspend fun addProject(project: Project): Project = suspendTransaction {
-        val dbMod = ModDAO.find { ModTable.modid eq project.modid }.single()
+        val dbMod = ModDAO.find { ModTable.id eq project.internalModId }.single()
         ProjectDAO.new {
             platform = project.platform.toString()
             projectId = project.id

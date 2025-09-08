@@ -13,7 +13,6 @@ data class Project(
     val id: String,
 
     val internalModId: Long,
-    val modid: String?,
 
     val internalId: Long? = null
 )

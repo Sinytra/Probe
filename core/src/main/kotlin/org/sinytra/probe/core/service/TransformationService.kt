@@ -19,7 +19,7 @@ data class TransformationResult(
     val version: String,
     val dependencyProjectId: List<String>,
     val success: Boolean,
-    val modid: String
+    val modid: String?
 )
 
 @OptIn(ExperimentalPathApi::class)
@@ -47,7 +47,12 @@ class TransformationService(
         }
         workDir.createDirectories()
 
-        val result = runTransformer(workDir, allFiles, gameFiles.cleanFile, classPath, gameVersion)
+        val result = try {
+            runTransformer(workDir, allFiles, gameFiles.cleanFile, classPath, gameVersion)
+        } catch (e: Exception) {
+            LOGGER.error("Error transforming project ${mainFile.projectId} version ${mainFile.versionId}", e)
+            null
+        }
 
         workDir.deleteRecursively()
 
@@ -55,8 +60,8 @@ class TransformationService(
             project.version.projectId,
             project.version.versionId,
             otherFiles.map(ProjectVersion::projectId),
-            result.success,
-            result.primaryModid
+            result?.success ?: false,
+            result?.primaryModid
         )
     }
 
