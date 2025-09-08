@@ -7,7 +7,7 @@ import org.jetbrains.exposed.dao.id.LongIdTable
 import org.sinytra.probe.core.model.Mod
 
 object ModTable : LongIdTable("mod") {
-    val modid = varchar("modid", 255).nullable().uniqueIndex()
+    val modid = varchar("modid", 255).nullable()
 }
 
 class ModDAO(id: EntityID<Long>) : LongEntity(id) {
