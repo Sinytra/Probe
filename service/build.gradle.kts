@@ -27,7 +27,7 @@ application {
         "-Dorg.sinytra.probe.neo_version=$neoForgeVersion",
         "-Dorg.sinytra.probe.game_version=$gameVersion",
         "-Dorg.sinytra.probe.local_cache=true",
-        "-Dorg.probe.logging.level=INFO",
+        "-Dorg.probe.logging.level=DEBUG",
         "--add-opens", "java.base/java.lang.invoke=ALL-UNNAMED"
     )
 }

@@ -51,6 +51,8 @@ class PostgresTestResultRepository : TestResultRepository {
     }
 
     override suspend fun addTestResult(result: BaseTestResult): TestResult = suspendTransaction {
+        maxAttempts = 1
+
         val dbProject = ProjectDAO.find { ProjectTable.id eq result.project.internalId }.single()
         val dbTestEnvironment = TestEnvironmentDAO.find { TestEnvironmentTable.id eq result.testEnvironment.id }.single()
         TestResultDAO.new {

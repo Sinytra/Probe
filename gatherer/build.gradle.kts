@@ -36,6 +36,7 @@ repositories {
 }
 
 dependencies {
+    implementation(project(":base"))
     implementation(project(":core"))
 
     implementation(platform(libs.log4j.bom))

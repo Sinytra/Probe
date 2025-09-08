@@ -15,7 +15,7 @@ object TestEnvironmentTable : LongIdTable("test_environment") {
     val createdAt = datetime("created_at").defaultExpression(CurrentDateTime)
 
     init {
-        uniqueIndex(connectorVersion, gameVersion, neoForgeVersion)
+        uniqueIndex("test_environment_params", connectorVersion, gameVersion, neoForgeVersion)
     }
 }
 

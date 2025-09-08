@@ -8,6 +8,7 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.serialization.json.Json
+import org.sinytra.probe.base.ProjectSearchResult
 import org.sinytra.probe.core.service.CleanupService
 import org.sinytra.probe.core.platform.ModrinthPlatform
 import org.sinytra.probe.core.platform.ModrinthPlatform.Companion.FAPI_ID
@@ -15,10 +16,9 @@ import org.sinytra.probe.core.platform.ModrinthPlatform.Companion.FFAPI_ID
 import org.sinytra.probe.core.platform.ModrinthPlatform.Companion.FFAPI_SLUG
 import org.sinytra.probe.core.platform.ModrinthPlatform.Companion.LOADER_FABRIC
 import org.sinytra.probe.core.platform.ModrinthPlatform.Companion.LOADER_NEOFORGE
-import org.sinytra.probe.core.platform.ProjectSearchResult
 import org.sinytra.probe.core.platform.ResolvedProject
 import org.sinytra.probe.core.service.SetupService
-import org.sinytra.probe.gatherer.SerializableTransformResult
+import org.sinytra.probe.base.SerializableTransformResult
 import org.sinytra.probe.gatherer.TestRunnerParams
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory

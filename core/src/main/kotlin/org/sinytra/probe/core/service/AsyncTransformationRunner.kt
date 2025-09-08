@@ -58,7 +58,7 @@ class AsyncTransformationRunner(
 
     suspend fun computeAndSave(project: PlatformProject, resolved: ResolvedProject, testEnvironment: TestEnvironment): TestResult {
         val result = transfomer.runTransformation(resolved, testEnvironment.gameVersion)
-        val testResult = mutex.withLock { persistence.saveResult(project, result, testEnvironment) }
+        val testResult = mutex.withLock { persistence.saveResult(project, result.modid, result.version, result.success, testEnvironment) }
         return testResult
     }
 }

@@ -3,6 +3,7 @@ package org.sinytra.probe.gatherer
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
+import org.sinytra.probe.base.TestReport
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine.*

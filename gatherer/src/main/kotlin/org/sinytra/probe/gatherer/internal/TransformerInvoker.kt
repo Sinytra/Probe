@@ -3,10 +3,10 @@
 package org.sinytra.probe.gatherer.internal
 
 import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
-import org.sinytra.probe.core.service.TransformLibOutput
+import org.sinytra.probe.base.TransformLibOutput
+import org.sinytra.probe.base.TransformResult
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.nio.file.Path
@@ -20,12 +20,6 @@ class TransformerInvoker(
     companion object {
         private val LOGGER: Logger = LoggerFactory.getLogger("TransformerInvoker")
     }
-
-    @Serializable
-    data class TransformResult(
-        val output: TransformLibOutput,
-        val errors: Boolean
-    )
 
     // TODO Unify with TransformationService
     fun invokeTransform(slug: String, transformerPath: Path, workDir: Path, sources: List<Path>, cleanPath: Path, classPath: List<Path>): TransformResult {

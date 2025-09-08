@@ -1,9 +1,28 @@
-package org.sinytra.probe.gatherer
+package org.sinytra.probe.base
 
 import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
-import org.sinytra.probe.core.platform.ProjectSearchResult
-import org.sinytra.probe.gatherer.internal.TransformerInvoker.TransformResult
+
+@Serializable
+data class ProjectSearchResult(
+    val id: String,
+    val name: String,
+    val iconUrl: String?,
+    val slug: String,
+    val versionId: String
+)
+
+@Serializable
+data class TransformLibOutput(
+    val success: Boolean,
+    val primaryModid: String
+)
+
+@Serializable
+data class TransformResult(
+    val output: TransformLibOutput,
+    val errors: Boolean
+)
 
 @Serializable
 data class SerializableTransformResult(
@@ -17,8 +36,8 @@ data class TestEnvironment(
     val transformerVersion: String?,
     val transformerHash: String?,
     val runnerVersion: String?,
-    val neoFormRuntimeVersion: String,
-    val neoForgeVersion: String,
+    val neoformRuntimeVersion: String,
+    val neoforgeVersion: String,
     val gameVersion: String,
     val compatibleGameVersions: List<String>
 )

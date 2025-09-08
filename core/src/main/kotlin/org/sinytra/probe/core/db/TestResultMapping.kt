@@ -15,6 +15,10 @@ object TestResultTable : IntIdTable("test_result") {
     val versionId = varchar("version_id", 255)
     val passing = bool("passing")
     val createdAt = datetime("created_at").defaultExpression(CurrentDateTime)
+
+    init {
+        uniqueIndex("test_result_params", project, testEnvironment, versionId)
+    }
 }
 
 class TestResultDAO(id: EntityID<Int>) : IntEntity(id) {

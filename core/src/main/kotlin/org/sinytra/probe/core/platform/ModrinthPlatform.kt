@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
+import org.sinytra.probe.base.ProjectSearchResult
 import org.sinytra.probe.core.platform.ModrinthAPI.ModrinthVersionDependency
 import org.sinytra.probe.core.platform.ModrinthAPI.ModrinthVersion
 import org.sinytra.probe.core.platform.ModrinthAPI.ModrinthSearchResult
@@ -23,15 +24,6 @@ data class ModrinthResolvedVersion(
     override val path: String,
     override val dependencies: List<String>
 ) : ProjectVersion
-
-@Serializable
-data class ProjectSearchResult(
-    val id: String,
-    val name: String,
-    val iconUrl: String?,
-    val slug: String,
-    val versionId: String
-)
 
 class ModrinthPlatform(
     private val storagePath: Path,

@@ -22,9 +22,9 @@ class PersistenceService(
         return results.getTestResultFor(dbProject.modid, testEnvironment)
     }
 
-    suspend fun saveResult(project: PlatformProject, result: TransformationResult, testEnvironment: TestEnvironment): TestResult {
-        val mod = mods.modByModid(result.modid)
-            ?: mods.addMod(Mod(modid = result.modid, projects = listOf()))
+    // TODO Account for failed transformations
+    suspend fun saveResult(project: PlatformProject, modid: String, versionId: String, passing: Boolean, testEnvironment: TestEnvironment): TestResult {
+        val mod = mods.modByModid(modid) ?: mods.addMod(Mod(modid = modid, projects = listOf()))
 
         val dbProject = projects.projectByPlatformAndId(project.platform, project.id)
             ?: projects.addProject(Project(platform = project.platform, id = project.id, modid = mod.modid))
@@ -34,6 +34,6 @@ class PersistenceService(
         }
 
         // Save result
-        return results.addTestResult(BaseTestResult(dbProject, result.version, result.success, testEnvironment))
+        return results.addTestResult(BaseTestResult(dbProject, versionId, passing, testEnvironment))
     }
 }

@@ -4,6 +4,7 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
+import org.sinytra.probe.base.TransformLibOutput
 import org.sinytra.probe.base.db.ProjectPlatform
 import org.sinytra.probe.core.platform.*
 import org.slf4j.LoggerFactory
@@ -20,12 +21,6 @@ data class TransformationResult(
     val success: Boolean,
     val modid: String
 )
-
-@Serializable
-data class TransformLibOutput(
-    val success: Boolean,
-    val primaryModid: String
-) 
 
 @OptIn(ExperimentalPathApi::class)
 class TransformationService(

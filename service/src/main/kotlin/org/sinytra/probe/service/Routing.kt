@@ -3,10 +3,13 @@ package org.sinytra.probe.service
 import io.ktor.http.*
 import io.ktor.serialization.*
 import io.ktor.server.application.*
-import io.ktor.server.auth.authenticate
+import io.ktor.server.auth.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import org.sinytra.probe.base.*
 import org.sinytra.probe.base.db.ProjectPlatform
 import org.sinytra.probe.core.model.TestResult
@@ -17,11 +20,11 @@ import org.sinytra.probe.core.service.PersistenceService
 import org.sinytra.probe.core.service.SetupService
 import org.sinytra.probe.core.service.TransformationService
 import org.slf4j.LoggerFactory
-import java.lang.Exception
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
 import kotlin.io.path.deleteIfExists
+import kotlin.time.measureTimedValue
 
 data class EnvironmentConfig(
     val gameVersion: String,
@@ -106,26 +109,60 @@ fun Application.configureRouting(
         }
 
         authenticate("api-key") {
-            post("/api/v1/internal/update") {
-                try {
-                    liveResourceLock.write {
-                        LOGGER.info("Updating transformer library...")
-                        val current = setup.getTransformLib()
-                        val updated = setup.updateTransformLib()
-                        if (updated != null) {
-                            current.path.deleteIfExists()
+            post("/api/v1/internal/import") {
+                val body = call.receive<TestReport>()
 
-                            LOGGER.info("Successfully updated transformer from {} to {}", current.version, updated.version)
-                        } else {
-                            LOGGER.info("Transformer library is already up-to-date")
-                        }
-                    }
-
-                    call.respond(HttpStatusCode.OK)
-                } catch (ex: Exception) {
-                    LOGGER.error("Failed to update transformer library", ex)
-                    call.respond(HttpStatusCode.InternalServerError)
+                if (body.environment.transformerVersion == null) {
+                    call.respond(HttpStatusCode.BadRequest, "environment.transformerVersion must not be null")
+                    return@post
                 }
+
+                LOGGER.info("Importing ${body.results.size} test results")
+
+                val testEnvironment = persistence.getOrCreateTestEnvironment(
+                    body.environment.transformerVersion!!,
+                    body.environment.gameVersion,
+                    body.environment.neoforgeVersion
+                )
+                val (results, duration) = measureTimedValue {
+                    body.results
+                        .filter { it.result != null }
+                        .map { res ->
+                            async(Dispatchers.IO) {
+                                try {
+                                    val project = platforms.getProject(ProjectPlatform.MODRINTH, res.project.slug)
+                                        ?: return@async null
+
+                                    return@async persistence.saveResult(project, res.result!!.output.primaryModid, res.versionNumber, res.result!!.output.success, testEnvironment)
+                                } catch (ex: Exception) {
+                                    LOGGER.error("Error importing result", ex)
+                                    return@async null
+                                }
+                            }
+                        }
+                        .awaitAll()
+                        .filterNotNull()
+                }
+                LOGGER.info("Imported ${results.size} test results in ${duration.inWholeMilliseconds} ms")
+
+                call.respond(HttpStatusCode.OK)
+            }
+
+            post("/api/v1/internal/update") {
+                liveResourceLock.write {
+                    LOGGER.info("Updating transformer library...")
+                    val current = setup.getTransformLib()
+                    val updated = setup.updateTransformLib()
+                    if (updated != null) {
+                        current.path.deleteIfExists()
+
+                        LOGGER.info("Successfully updated transformer from {} to {}", current.version, updated.version)
+                    } else {
+                        LOGGER.info("Transformer library is already up-to-date")
+                    }
+                }
+
+                call.respond(HttpStatusCode.OK)
             }
         }
     }

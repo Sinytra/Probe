@@ -1,11 +1,18 @@
+@file:OptIn(ExperimentalSerializationApi::class)
+
 package org.sinytra.probe.gatherer.internal
 
 import kotlinx.datetime.Clock
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonNamingStrategy
 import net.steppschuh.markdowngenerator.table.Table
 import net.steppschuh.markdowngenerator.text.TextBuilder
 import net.steppschuh.markdowngenerator.text.code.Code
 import net.steppschuh.markdowngenerator.text.emphasis.BoldText
+import org.sinytra.probe.base.SerializableTransformResult
+import org.sinytra.probe.base.TestEnvironment
+import org.sinytra.probe.base.TestReport
 import org.sinytra.probe.core.service.SetupService
 import org.sinytra.probe.gatherer.*
 import org.slf4j.Logger
@@ -22,6 +29,11 @@ import kotlin.time.toDuration
 
 object ResultReporter {
     private val LOGGER: Logger = LoggerFactory.getLogger("ResultReporter")
+
+    val JSON = Json { 
+        namingStrategy = JsonNamingStrategy.SnakeCase
+        decodeEnumsCaseInsensitive = true
+    }
 
     fun processResults(results: List<SerializableTransformResult>, duration: Duration, resultDir: Path, writeReport: Boolean, setup: SetupService, params: TestRunnerParams) {
         val compatible = results.count { it.result?.output?.success == true }
@@ -50,7 +62,7 @@ object ResultReporter {
         )
 
         val report = TestReport(results, environment, duration.inWholeSeconds, Clock.System.now())
-        resultsFile.writeText(Json.encodeToString(report))
+        resultsFile.writeText(JSON.encodeToString(report))
 
         if (writeReport) {
             val reportFile = resultDir / "report.md"
@@ -76,8 +88,8 @@ object ResultReporter {
         val resultStatus: (SerializableTransformResult) -> String = {
             if (it.result == null) "$ICON_EXCLAMATION Failed"
             else {
-                (if (it.result.output.success) "$ICON_CHECK Compatible" else "$ICON_X Incompatible")
-                    .let { s -> if (it.result.errors) "$s ($ICON_WARN)" else s }
+                (if (it.result!!.output.success) "$ICON_CHECK Compatible" else "$ICON_X Incompatible")
+                    .let { s -> if (it.result!!.errors) "$s ($ICON_WARN)" else s }
             }
         }
 
