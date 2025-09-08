@@ -56,7 +56,7 @@ fun createTestRunner(params: TestRunnerParams): ModTestRunner {
         params
     )
 
-    setupService.getTransformLibPath()
+    setupService.getTransformLib()
     setupService.installDependencies()
 
     return gatherer

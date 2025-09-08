@@ -1,18 +1,10 @@
 package org.sinytra.probe.core.service
 
-import org.slf4j.LoggerFactory
-import java.io.FileOutputStream
+import org.sinytra.probe.core.service.DownloaderService.Companion.downloadFile
 import java.lang.ProcessBuilder.Redirect
-import java.net.URI
-import java.nio.channels.Channels
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
-import kotlin.io.path.Path
-import kotlin.io.path.absolutePathString
-import kotlin.io.path.createDirectories
-import kotlin.io.path.createParentDirectories
-import kotlin.io.path.div
-import kotlin.io.path.exists
+import kotlin.io.path.*
 
 data class GameFiles(val cleanFile: Path, val loaderFiles: List<Path>)
 
@@ -21,13 +13,13 @@ class SetupService(
     private val useLocalCache: Boolean,
     private val nfrtVersion: String,
     private val neoForgeVersion: String,
-    private val transformerVersion: String
+    initialTransformerVersion: String?
 ) {
     companion object {
-        private val LOGGER = LoggerFactory.getLogger(SetupService::class.java)
         private const val NEO_MAVEN = "https://maven.neoforged.net/releases"
-        private const val SINYTRA_MAVEN = "https://maven.sinytra.org"
     }
+
+    private var downloader = DownloaderService(baseDir, initialTransformerVersion)
 
     fun installDependencies(): GameFiles {
         val outputDir: Path = baseDir / "output"
@@ -61,7 +53,7 @@ class SetupService(
             localCachePath.createDirectories()
             args += listOf("--home-dir", localCachePath.absolutePathString())
         }
-        
+
         if (System.getenv("org.sinytra.probe.core.verbose") == "true") {
             args += "--verbose"
         }
@@ -74,39 +66,23 @@ class SetupService(
             .waitFor(60, TimeUnit.MINUTES)
 
         // Initialize transform lib
-        getTransformLibPath()
+        getTransformLib()
 
         return GameFiles(cleanArtifact, listOf(neoUniversal, compiledArtifact))
     }
 
-    fun getTransformLibPath(): Path {
-        val provided = System.getProperty("org.sinytra.transformer.path")
-        if (provided != null) {
-            return Path(provided)
+    fun getTransformLib(): TransformLib = downloader.getTransformLib()
+
+    fun updateTransformLib(): TransformLib? {
+        val newDownloader = DownloaderService(baseDir, null, false)
+        val newTransformer = newDownloader.getTransformLib()
+
+        if (newTransformer.version != downloader.activeTransformerVersion) {
+            downloader = newDownloader
+            return newTransformer
         }
 
-        val outputFile = baseDir / "transformer-$transformerVersion-all.jar"
-        outputFile.createParentDirectories()
-
-        val transformerUrl = getMavenUrl(SINYTRA_MAVEN, "org.sinytra.connector", "transformer", transformerVersion, "all")
-        downloadFile(transformerUrl, outputFile)
-        if (!outputFile.exists()) {
-            throw IllegalStateException("Failed to download transformer lib")
-        }
-
-        return outputFile
-    }
-
-    private fun downloadFile(url: String, dest: Path) {
-        if (!dest.exists()) {
-            LOGGER.info("Downloading file $url to $dest")
-
-            URI(url).toURL().openStream().use { input ->
-                FileOutputStream(dest.toFile()).use { output ->
-                    output.channel.transferFrom(Channels.newChannel(input), 0, Long.MAX_VALUE)
-                }
-            }
-        }
+        return null
     }
 
     private fun getMavenUrl(repo: String, group: String, name: String, version: String, classifier: String? = null): String {

@@ -27,7 +27,7 @@ application {
         "-Dorg.sinytra.probe.neo_version=$neoForgeVersion",
         "-Dorg.sinytra.probe.game_version=$gameVersion",
         "-Dorg.sinytra.probe.local_cache=true",
-        "-Dorg.probe.logging.level=DEBUG",
+        "-Dorg.probe.logging.level=INFO",
         "--add-opens", "java.base/java.lang.invoke=ALL-UNNAMED"
     )
 }
@@ -55,7 +55,7 @@ repositories {
 afterEvaluate {
     (application.applicationDefaultJvmArgs as MutableList<String>) += listOf(
         "-Dorg.sinytra.transformer.path=${transfomer.singleFile.absolutePath}",
-        "-Dorg.sinytra.probe.transformer_version=${libs.connector.tranformer.get().version!!}",
+        "-Dorg.sinytra.probe.transformer_version=${libs.connector.tranformer.get().version!!}"
     )
 }
 
@@ -71,6 +71,7 @@ dependencies {
     implementation(libs.ktor.server.core)
     implementation(libs.ktor.serialization.kotlinx.json)
     implementation(libs.ktor.server.content.negotiation)
+    implementation(libs.ktor.server.auth)
     implementation(libs.postgresql)
     implementation(libs.h2)
     implementation(libs.lettuce)

@@ -38,9 +38,10 @@ object ResultReporter {
 
         val resultsFile = resultDir / "results.json"
 
+        val transformLibPath = setup.getTransformLib().path
         val environment = TestEnvironment(
-            getImplementationVersion(setup.getTransformLibPath()),
-            getSHA256(setup.getTransformLibPath()),
+            getImplementationVersion(transformLibPath),
+            getSHA256(transformLibPath),
             GathererMain.getVersion(),
             params.nfrtVersion,
             params.neoForgeVersion,

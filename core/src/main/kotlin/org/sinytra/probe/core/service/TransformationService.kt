@@ -83,12 +83,12 @@ class TransformationService(
 
     @OptIn(ExperimentalSerializationApi::class)
     private fun runTransformer(workDir: Path, sources: List<Path>, cleanPath: Path, classPath: List<Path>, gameVersion: String): TransformLibOutput {
-        val transformerPath = setup.getTransformLibPath()
+        val transformer = setup.getTransformLib()
 
         val baseArgs = listOf(
             "java",
             "--add-opens", "java.base/java.lang.invoke=ALL-UNNAMED",
-            "-jar", transformerPath.absolutePathString(),
+            "-jar", transformer.path.absolutePathString(),
             "--clean", cleanPath.absolutePathString(),
             "--game-version", gameVersion,
             "--work-dir", workDir.absolutePathString(),
