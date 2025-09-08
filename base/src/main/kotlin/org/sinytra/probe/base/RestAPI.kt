@@ -36,9 +36,9 @@ data class TestEnvironmentDTO(
 @Serializable
 data class TestResponseBody(
     val modid: String?,
-    val iconUrl: String,
+    val iconUrl: String?,
     val projectUrl: String,
-    val version: String,
+    val version: String?,
     val passing: Boolean,
     val environment: TestEnvironmentDTO,
     val createdAt: LocalDateTime,

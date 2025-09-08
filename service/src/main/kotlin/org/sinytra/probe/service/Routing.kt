@@ -90,9 +90,9 @@ fun Application.configureRouting(
 
                     val response = TestResponseBody(
                         result.modid,
-                        project.iconUrl ?: "",
+                        project.iconUrl,
                         project.url,
-                        version?.versionNumber ?: "unknown",
+                        version?.versionNumber,
                         result.passing,
                         envDto,
                         result.createdAt,
@@ -133,7 +133,13 @@ fun Application.configureRouting(
                                     val project = platforms.getProject(ProjectPlatform.MODRINTH, res.project.slug)
                                         ?: return@async null
 
-                                    return@async persistence.saveResult(project, res.result!!.output.primaryModid, res.versionNumber, res.result!!.output.success, testEnvironment)
+                                    return@async persistence.saveResult(
+                                        project,
+                                        res.result!!.output.primaryModid,
+                                        res.project.versionId,
+                                        res.result!!.output.success,
+                                        testEnvironment
+                                    )
                                 } catch (ex: Exception) {
                                     LOGGER.error("Error importing result", ex)
                                     return@async null

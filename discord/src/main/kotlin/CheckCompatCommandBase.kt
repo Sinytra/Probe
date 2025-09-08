@@ -84,7 +84,7 @@ abstract class CheckCompatCommandBase {
                 color = if (result.passing) green else red
                 url = link
                 thumbnail {
-                    url = result.iconUrl
+                    url = result.iconUrl ?: ""
                 }
 
                 field {
@@ -101,7 +101,7 @@ abstract class CheckCompatCommandBase {
                 }
                 field {
                     name = "Mod version"
-                    value = result.version
+                    value = result.version ?: "unknown"
                     inline = true
                 }
                 field {
