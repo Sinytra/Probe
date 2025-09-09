@@ -1,7 +1,9 @@
 package org.sinytra.probe.service
 
+import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
+import io.ktor.server.plugins.cors.routing.*
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.sinytra.probe.base.db.ProjectPlatform
@@ -69,6 +71,18 @@ fun Application.module() {
                 }
             }
         }
+    }
+
+    install(CORS) {
+        anyHost()
+        anyMethod()
+        allowOrigins { true }
+        allowHeaders { true }
+        allowMethod(HttpMethod.Get)
+        allowMethod(HttpMethod.Post)
+        allowMethod(HttpMethod.Options)
+        allowCredentials = true
+        allowNonSimpleContentTypes = true
     }
 
     configureSerialization()
