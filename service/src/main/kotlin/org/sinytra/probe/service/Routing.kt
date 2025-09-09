@@ -56,15 +56,22 @@ fun Application.configureRouting(
 
                 val project = platforms.getProject(body.platform, body.id)
                     ?: return@post call.respond(HttpStatusCode.NotFound)
+                val testProject = TestProjectDTO(
+                    project.id,
+                    project.slug,
+                    project.name,
+                    project.summary,
+                    project.iconUrl,
+                    project.url,
+                    project.platform
+                )
 
                 val ifNeoForge = platforms.isNeoForgeAvailable(project, env.gameVersion)
                 if (ifNeoForge) {
                     return@post call.respond(
                         SkippedResponseBody(
-                            project.slug,
-                            project.iconUrl ?: "",
-                            project.url,
                             env.gameVersion,
+                            testProject,
                             ResultType.NATIVE
                         )
                     )
@@ -73,9 +80,9 @@ fun Application.configureRouting(
                 val resolved = platforms.resolveProject(project, env.gameVersion)
                     ?: return@post call.respond(
                         UnavailableResponseBody(
-                            project.slug,
                             LOADER_FABRIC,
                             env.gameVersion,
+                            testProject,
                             ResultType.UNAVAILABLE
                         )
                     )
@@ -90,12 +97,14 @@ fun Application.configureRouting(
 
                     val response = TestResponseBody(
                         result.modid,
-                        project.iconUrl,
-                        project.url,
                         version?.versionNumber,
+                        version?.versionId,
                         result.passing,
+
                         envDto,
                         result.createdAt,
+
+                        testProject,
                         ResultType.TESTED
                     )
 

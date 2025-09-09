@@ -8,6 +8,7 @@ import org.sinytra.probe.base.db.ProjectPlatform
 data class TestRequestBody(val platform: ProjectPlatform, val id: String)
 
 interface ResponseBase {
+    val project: TestProjectDTO
     val type: ResultType
 }
 
@@ -19,10 +20,22 @@ enum class ResultType {
 }
 
 @Serializable
-data class UnavailableResponseBody(
+data class TestProjectDTO(
+    val id: String,
     val slug: String,
+    val title: String,
+    val description: String,
+    val iconUrl: String?,
+    val url: String,
+    val platform: ProjectPlatform
+)
+
+@Serializable
+data class UnavailableResponseBody(
     val loader: String,
     val gameVersion: String,
+
+    override val project: TestProjectDTO,
     override val type: ResultType
 ) : ResponseBase
 
@@ -36,20 +49,21 @@ data class TestEnvironmentDTO(
 @Serializable
 data class TestResponseBody(
     val modid: String?,
-    val iconUrl: String?,
-    val projectUrl: String,
-    val version: String?,
+    val versionNumber: String?,
+    val versionId: String?,
     val passing: Boolean,
+
     val environment: TestEnvironmentDTO,
     val createdAt: LocalDateTime,
+
+    override val project: TestProjectDTO,
     override val type: ResultType
-): ResponseBase
+) : ResponseBase
 
 @Serializable
 data class SkippedResponseBody(
-    val slug: String,
-    val iconUrl: String,
-    val projectUrl: String,
-    val gameVersion: String, 
+    val gameVersion: String,
+
+    override val project: TestProjectDTO,
     override val type: ResultType
 ) : ResponseBase

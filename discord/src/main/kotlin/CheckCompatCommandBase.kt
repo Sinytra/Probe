@@ -69,14 +69,14 @@ abstract class CheckCompatCommandBase {
 
     private suspend fun DeferredMessageInteractionResponseBehavior.respondUnavailableResult(result: UnavailableResponseBody) {
         respond {
-            content = ":warning: Project `${result.slug}` is not available for ${result.loader.capitalize()} on ${result.gameVersion}"
+            content = ":warning: Project `${result.project.slug}` is not available for ${result.loader.capitalize()} on ${result.gameVersion}"
         }
     }
 
     private suspend fun DeferredMessageInteractionResponseBehavior.respondTestResult(result: TestResponseBody) {
         val green = Color(0, 255, 0)
         val red = Color(255, 0, 0)
-        val link = result.projectUrl
+        val link = result.project.url
 
         respond {
             embed {
@@ -84,7 +84,7 @@ abstract class CheckCompatCommandBase {
                 color = if (result.passing) green else red
                 url = link
                 thumbnail {
-                    url = result.iconUrl ?: ""
+                    url = result.project.iconUrl ?: ""
                 }
 
                 field {
@@ -101,7 +101,7 @@ abstract class CheckCompatCommandBase {
                 }
                 field {
                     name = "Mod version"
-                    value = result.version ?: "unknown"
+                    value = result.versionNumber ?: "unknown"
                     inline = true
                 }
                 field {
@@ -125,7 +125,7 @@ abstract class CheckCompatCommandBase {
 
     suspend fun DeferredMessageInteractionResponseBehavior.respondSkippedTest(result: SkippedResponseBody) {
         val neoOrange = Color(215, 116, 47)
-        val link = result.projectUrl
+        val link = result.project.url
 
         respond {
             embed {
@@ -134,12 +134,12 @@ abstract class CheckCompatCommandBase {
                 url = link
 
                 thumbnail {
-                    url = result.iconUrl
+                    url = result.project.iconUrl ?: ""
                 }
 
                 field {
                     name = "Project slug"
-                    value = "`${result.slug}`"
+                    value = "`${result.project.slug}`"
                 }
                 field {
                     name = "Compatibility"

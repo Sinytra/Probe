@@ -93,7 +93,7 @@ class ModrinthPlatform(
     override suspend fun isNeoForgeAvailable(project: PlatformProject, gameVersion: String): Boolean {
         val key = neoForgeKey(project.id)
 
-        val data = cache.get(key) ?: coroutineScope {
+        val data = cache.get(key)?.toBoolean() ?: coroutineScope {
             val available = ModrinthAPI.getCandidateVersion(
                 project.id,
                 listOf(gameVersion),
@@ -105,7 +105,7 @@ class ModrinthPlatform(
             available
         }
 
-        return data == "true"
+        return data
     }
 
     override suspend fun resolveProject(project: PlatformProject, gameVersion: String): ResolvedProject? {

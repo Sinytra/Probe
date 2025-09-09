@@ -16,11 +16,13 @@ import kotlinx.serialization.json.JsonNamingStrategy
 import org.sinytra.probe.base.ResponseBase
 import org.sinytra.probe.base.ResultType
 import org.sinytra.probe.base.SkippedResponseBody
+import org.sinytra.probe.base.TestProjectDTO
 import org.sinytra.probe.base.TestResponseBody
 import org.sinytra.probe.base.UnavailableResponseBody
 
 @Serializable
 data class ResponseBaseData(
+    override val project: TestProjectDTO,
     override val type: ResultType
 ) : ResponseBase
 

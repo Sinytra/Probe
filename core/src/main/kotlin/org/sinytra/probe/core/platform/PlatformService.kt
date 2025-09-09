@@ -8,6 +8,7 @@ interface PlatformProject {
     val id: String
     val slug: String
     val name: String
+    val summary: String
     val iconUrl: String?
     val url: String
     val platform: ProjectPlatform

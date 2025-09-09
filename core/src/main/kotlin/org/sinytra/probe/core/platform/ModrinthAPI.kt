@@ -32,6 +32,7 @@ object ModrinthAPI {
         override val id: String,
         override val slug: String,
         override val name: String,
+        override val summary: String,
         override val iconUrl: String?
     ) : PlatformProject {
         override val url: String = "https://modrinth.com/mod/$slug"
@@ -66,10 +67,11 @@ object ModrinthAPI {
         val projectId: String,
         val slug: String,
         val name: String,
+        val summary: String,
         val iconUrl: String?,
         val versionId: String
     ) {
-        internal fun toMRProject() = ModrinthProject(projectId, slug, name, iconUrl ?: "")
+        internal fun toMRProject() = ModrinthProject(projectId, slug, name, summary, iconUrl)
     }
 
     @Serializable
