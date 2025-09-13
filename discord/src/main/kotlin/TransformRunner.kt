@@ -17,8 +17,10 @@ import org.sinytra.probe.base.ResponseBase
 import org.sinytra.probe.base.ResultType
 import org.sinytra.probe.base.SkippedResponseBody
 import org.sinytra.probe.base.TestProjectDTO
+import org.sinytra.probe.base.TestRequestBody
 import org.sinytra.probe.base.TestResponseBody
 import org.sinytra.probe.base.UnavailableResponseBody
+import org.sinytra.probe.base.db.ProjectPlatform
 
 @Serializable
 data class ResponseBaseData(
@@ -29,10 +31,7 @@ data class ResponseBaseData(
 class ProjectNotFoundException(message: String) : Exception(message)
 
 object TransformRunner {
-    @Serializable
-    private data class ProbeRequestBody(val platform: String, val id: String)
-
-    suspend fun runTransformation(platform: String, slug: String): ResponseBase {
+    suspend fun runTransformation(platform: String, slug: String, gameVersion: String): ResponseBase {
         val endpoint = System.getenv("CORE_API_URL") ?: "localhost:8080"
 
         val client = HttpClient {
@@ -50,9 +49,10 @@ object TransformRunner {
             }
         }
 
+        val parsedPlatform = ProjectPlatform.valueOf(platform)
         val resp = client.post("/api/v1/probe") {
             contentType(ContentType.Application.Json)
-            setBody(ProbeRequestBody(platform, slug))
+            setBody(TestRequestBody(parsedPlatform, slug, gameVersion))
             timeout { 
                 socketTimeoutMillis = 60000
                 requestTimeoutMillis = 60000

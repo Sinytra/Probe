@@ -5,7 +5,7 @@ import dev.kord.core.entity.application.GlobalChatInputCommand
 import dev.kord.core.event.interaction.GuildChatInputCommandInteractionCreateEvent
 import dev.kord.rest.builder.interaction.string
 
-class CheckCompatChatCommand : CheckCompatCommandBase() {
+class CheckCompatChatCommand(gameVersion: String) : CheckCompatCommandBase(gameVersion) {
 
     suspend fun register(kord: Kord): GlobalChatInputCommand {
         return kord.createGlobalChatInputCommand(

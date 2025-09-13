@@ -10,11 +10,6 @@ val neoForgeVersion: String by rootProject
 val gameVersion: String by rootProject
 val dockerImage = "sinytra/probe/service"
 
-val transfomer: Configuration by configurations.creating {
-    attributes.attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling.SHADOWED))
-    isTransitive = false
-}
-
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
 application {
@@ -24,7 +19,6 @@ application {
     applicationDefaultJvmArgs = mutableListOf(
         "-Dio.ktor.development=$isDevelopment",
         "-Dorg.sinytra.probe.storage_path=${file("run").absolutePath}",
-        "-Dorg.sinytra.probe.neo_version=$neoForgeVersion",
         "-Dorg.sinytra.probe.game_version=$gameVersion",
         "-Dorg.sinytra.probe.local_cache=true",
         "-Dorg.probe.logging.level=DEBUG",
@@ -52,15 +46,7 @@ repositories {
     mavenCentral()
 }
 
-afterEvaluate {
-    (application.applicationDefaultJvmArgs as MutableList<String>) += listOf(
-        "-Dorg.sinytra.transformer.path=${transfomer.singleFile.absolutePath}",
-        "-Dorg.sinytra.probe.transformer_version=${libs.connector.tranformer.get().version!!}"
-    )
-}
-
 dependencies {
-    transfomer(libs.connector.tranformer)
     implementation(project(":core"))
 
     implementation(platform(libs.log4j.bom))
@@ -91,10 +77,6 @@ dependencies {
 }
 
 tasks {
-    getByName("run") {
-        dependsOn(transfomer)
-    }
-
     register("publishDocker") {
         dependsOn("publishImage")
     }

@@ -18,13 +18,14 @@ suspend fun main() {
 
     val config = readConfig()
     val allowedChannels = config.getLongList("allowedChannels").map(::Snowflake)
+    val gameVersion = config.getString("gameVersion")
 
     val kord = Kord(token)
 
-    val checkChatCmd = CheckCompatChatCommand()
+    val checkChatCmd = CheckCompatChatCommand(gameVersion)
     val checkChatCmdRegistered = checkChatCmd.register(kord)
 
-    val checkMsgCmd = CheckCompatMessageCommand()
+    val checkMsgCmd = CheckCompatMessageCommand(gameVersion)
     val checkMsgCmdRegistered = checkMsgCmd.register(kord)
 
     kord.on<GuildChatInputCommandInteractionCreateEvent> {

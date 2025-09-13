@@ -97,8 +97,8 @@ class ModTestRunner(
     }
 
     private suspend fun runTests(candidates: List<ProjectSearchResult>, dependencies: List<ResolvedProject>, missingDeps: List<String>): List<SerializableTransformResult> {
-        val transformerPath = setup.getTransformLib().path
-        val gameFiles = setup.installDependencies()
+        val transformerPath = setup.getTransformLib(gameVersion).path
+        val gameFiles = setup.getGameFiles(gameVersion)
 
         val modsDir = workingDir / "mods"
         val classPath = gameFiles.loaderFiles.toMutableList() + resolveMandatedLibraries(modsDir)

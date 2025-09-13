@@ -5,7 +5,11 @@ import kotlinx.serialization.Serializable
 import org.sinytra.probe.base.db.ProjectPlatform
 
 @Serializable
-data class TestRequestBody(val platform: ProjectPlatform, val id: String)
+data class TestRequestBody(
+    val platform: ProjectPlatform,
+    val id: String,
+    val gameVersion: String
+)
 
 interface ResponseBase {
     val project: TestProjectDTO
@@ -43,7 +47,7 @@ data class UnavailableResponseBody(
 data class TestEnvironmentDTO(
     val connectorVersion: String,
     val gameVersion: String,
-    val neoForgeVersion: String
+    val neoforgeVersion: String
 )
 
 @Serializable

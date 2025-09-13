@@ -1,6 +1,8 @@
 package org.sinytra.probe.core.service
 
-import org.sinytra.probe.core.service.DownloaderService.Companion.downloadFile
+import kotlinx.coroutines.runBlocking
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.lang.ProcessBuilder.Redirect
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
@@ -12,36 +14,66 @@ class SetupService(
     private val baseDir: Path,
     private val useLocalCache: Boolean,
     private val nfrtVersion: String,
-    private val neoForgeVersion: String,
-    initialTransformerVersion: String?
+    val gameVersions: List<String>,
+    cache: CacheService
 ) {
     companion object {
-        private const val NEO_MAVEN = "https://maven.neoforged.net/releases"
+        private val LOGGER: Logger = LoggerFactory.getLogger(SetupService::class.java)
     }
 
-    private var downloader = DownloaderService(baseDir, initialTransformerVersion)
+    private var downloader = DownloaderService(baseDir, cache)
 
-    fun installDependencies(): GameFiles {
-        val outputDir: Path = baseDir / "output"
+    suspend fun installDependencies() {
+        for (gameVersion in gameVersions) {
+            LOGGER.info("Installing game files for $gameVersion")
+
+            installGameFiles(gameVersion)
+        }
+    }
+
+    fun getGameFiles(gameVersion: String): GameFiles {
+        return runBlocking { installGameFiles(gameVersion) }
+    }
+
+    fun getTransformLib(gameVersion: String): ResolvedLibrary {
+        validateGameVersion(gameVersion)
+        return runBlocking { downloader.getTransformerLib(gameVersion) }
+    }
+
+    fun getNeoForgeVersion(gameVersion: String): String {
+        validateGameVersion(gameVersion)
+        return runBlocking { downloader.getNeoForgeUniversalLib(gameVersion).version }
+    }
+
+    suspend fun updateLibraries() {
+        LOGGER.info("Updating libraries")
+
+        gameVersions.forEach {
+            downloader.clearCache(it)
+        }
+
+        installDependencies()
+    }
+
+    fun hasGameVersion(gameVersion: String): Boolean =
+        gameVersions.contains(gameVersion)
+
+    private suspend fun installGameFiles(gameVersion: String): GameFiles {
+        val outputDir: Path = baseDir / "neoforge" / gameVersion
         outputDir.createDirectories()
 
         val cleanArtifact = outputDir / "clean.jar"
         val compiledArtifact = outputDir / "compiled.jar"
 
-        val neoUniversal = baseDir / "neoforge-$neoForgeVersion-universal.jar"
-        val neoUniversalUrl = getMavenUrl(NEO_MAVEN, "net.neoforged", "neoforge", neoForgeVersion, "universal")
-        downloadFile(neoUniversalUrl, neoUniversal)
-
-        val runtime = baseDir / "neoform-runtime-$nfrtVersion-all.jar"
-        val nfrtUrl = getMavenUrl(NEO_MAVEN, "net.neoforged", "neoform-runtime", nfrtVersion, "all")
-        downloadFile(nfrtUrl, runtime)
+        val neoUniversal = downloader.getNeoForgeUniversalLib(gameVersion)
+        val nfrt = downloader.getNFRTRuntime(gameVersion, nfrtVersion)
 
         val workDir = baseDir / ".temp"
         workDir.createDirectories()
 
-        val neoMavenCoords = "net.neoforged:neoforge:$neoForgeVersion:userdev"
+        val neoMavenCoords = "net.neoforged:neoforge:${neoUniversal.version}:userdev"
         val args = mutableListOf(
-            "java", "-jar", runtime.absolutePathString(),
+            "java", "-jar", nfrt.path.absolutePathString(),
             "run", "--neoforge", neoMavenCoords, "--dist", "joined",
             "--write-result=compiled:${compiledArtifact.fileName}",
             "--write-result=vanillaDeobfuscated:${cleanArtifact.fileName}",
@@ -65,27 +97,14 @@ class SetupService(
             .start()
             .waitFor(60, TimeUnit.MINUTES)
 
-        // Initialize transform lib
-        getTransformLib()
+        getTransformLib(gameVersion)
 
-        return GameFiles(cleanArtifact, listOf(neoUniversal, compiledArtifact))
+        return GameFiles(cleanArtifact, listOf(neoUniversal.path, compiledArtifact))
     }
 
-    fun getTransformLib(): TransformLib = downloader.getTransformLib()
-
-    fun updateTransformLib(): TransformLib? {
-        val newDownloader = DownloaderService(baseDir, null, false)
-        val newTransformer = newDownloader.getTransformLib()
-
-        if (newTransformer.version != downloader.activeTransformerVersion) {
-            downloader = newDownloader
-            return newTransformer
+    private fun validateGameVersion(gameVersion: String) {
+        if (!gameVersions.contains(gameVersion)) {
+            throw IllegalArgumentException("Game version $gameVersion is not supported")
         }
-
-        return null
-    }
-
-    private fun getMavenUrl(repo: String, group: String, name: String, version: String, classifier: String? = null): String {
-        return "$repo/${group.replace('.', '/')}/$name/$version/$name-$version${classifier?.let { "-$it" }}.jar"
     }
 }

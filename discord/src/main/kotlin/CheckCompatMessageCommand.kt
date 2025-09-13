@@ -7,10 +7,10 @@ import dev.kord.core.event.interaction.GuildMessageCommandInteractionCreateEvent
 
 private data class ModTestArgs(val platform: String, val slug: String)
 
-class CheckCompatMessageCommand : CheckCompatCommandBase() {
+class CheckCompatMessageCommand(gameVersion: String) : CheckCompatCommandBase(gameVersion) {
     companion object {
         private val MODRINTH_PATTERN = Regex("https://modrinth\\.com/mod/(.+)")
-        
+
         private val PLATFORMS = mapOf(
             "modrinth" to MODRINTH_PATTERN
         )
@@ -40,7 +40,7 @@ class CheckCompatMessageCommand : CheckCompatCommandBase() {
     }
 
     private fun getModArgs(content: String): ModTestArgs? =
-        PLATFORMS.firstNotNullOfOrNull { (key, value) -> 
+        PLATFORMS.firstNotNullOfOrNull { (key, value) ->
             value.find(content)
                 ?.groups?.lastOrNull()?.value
                 ?.let { ModTestArgs(key, it) }

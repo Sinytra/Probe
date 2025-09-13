@@ -10,6 +10,7 @@ import org.sinytra.probe.core.platform.ModrinthAPI.ModrinthVersionDependency
 import org.sinytra.probe.core.platform.ModrinthAPI.ModrinthVersion
 import org.sinytra.probe.core.platform.ModrinthAPI.ModrinthSearchResult
 import org.sinytra.probe.core.platform.ModrinthAPI.ModrinthProject
+import org.sinytra.probe.core.service.CacheService
 import org.slf4j.LoggerFactory
 import java.nio.file.Path
 import kotlin.io.path.*
@@ -27,7 +28,7 @@ data class ModrinthResolvedVersion(
 
 class ModrinthPlatform(
     private val storagePath: Path,
-    private val cache: PlatformCache
+    private val cache: CacheService
 ) : PlatformService {
     companion object {
         const val FAPI_ID: String = "P7dR8mSH"

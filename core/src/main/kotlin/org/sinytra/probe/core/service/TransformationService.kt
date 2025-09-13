@@ -26,7 +26,6 @@ data class TransformationResult(
 class TransformationService(
     private val storagePath: Path,
     private val platforms: GlobalPlatformService,
-    private val gameFiles: GameFiles,
     private val setup: SetupService
 ) {
     companion object {
@@ -39,6 +38,7 @@ class TransformationService(
 
         val allFiles = (listOf(mainFile) + otherFiles).map { it.getFilePath(storagePath) }
 
+        val gameFiles = setup.getGameFiles(gameVersion)
         val classPath = gameFiles.loaderFiles.toMutableList() + resolveMandatedLibraries(gameVersion)
         val workDir = project.version.getFilePath(storagePath).parent / "output"
 
@@ -83,7 +83,7 @@ class TransformationService(
 
     @OptIn(ExperimentalSerializationApi::class)
     private fun runTransformer(workDir: Path, sources: List<Path>, cleanPath: Path, classPath: List<Path>, gameVersion: String): TransformLibOutput {
-        val transformer = setup.getTransformLib()
+        val transformer = setup.getTransformLib(gameVersion)
 
         val baseArgs = listOf(
             "java",

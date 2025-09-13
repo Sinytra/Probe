@@ -1,9 +1,10 @@
 package org.sinytra.probe.gatherer
 
 import io.lettuce.core.RedisClient
-import org.sinytra.probe.core.service.CleanupService
+import kotlinx.coroutines.runBlocking
 import org.sinytra.probe.core.platform.ModrinthPlatform
-import org.sinytra.probe.core.platform.PlatformCache
+import org.sinytra.probe.core.service.CacheService
+import org.sinytra.probe.core.service.CleanupService
 import org.sinytra.probe.core.service.SetupService
 import org.sinytra.probe.gatherer.internal.ModTestRunner
 import org.slf4j.Logger
@@ -29,21 +30,25 @@ data class TestRunnerParams(
 )
 
 fun createTestRunner(params: TestRunnerParams): ModTestRunner {
+    val url = System.getenv("REDIS_URL") ?: throw RuntimeException("Missing REDIS_URL")
+    LOGGER.trace("Connecting to redis instance")
+
+    val property = params.gameVersion.replace(".", "_")
+    System.setProperty("org.sinytra.probe.lib.neoforge.$property.version", params.neoForgeVersion)
+    System.setProperty("org.sinytra.probe.lib.transformer.$property.version", params.toolchainVersion)
+
+    val redisClient = RedisClient.create(url)
+    val redisConnection = redisClient.connect()
+    val cache = CacheService(redisConnection)
+
     val workDir = params.workDir
     val setupService = SetupService(
         (workDir / ".setup").also { it.createDirectories() },
         true,
         params.nfrtVersion,
-        params.neoForgeVersion,
-        params.toolchainVersion
+        listOf(params.gameVersion),
+        cache
     )
-
-    val url = System.getenv("REDIS_URL") ?: throw RuntimeException("Missing REDIS_URL")
-    LOGGER.trace("Connecting to redis instance")
-
-    val redisClient = RedisClient.create(url)
-    val redisConnection = redisClient.connect()
-    val cache = PlatformCache(redisConnection)
 
     val modrinthService = ModrinthPlatform(workDir / "mods", cache)
     val cleanupService = CleanupService(workDir)
@@ -56,8 +61,9 @@ fun createTestRunner(params: TestRunnerParams): ModTestRunner {
         params
     )
 
-    setupService.getTransformLib()
-    setupService.installDependencies()
+    runBlocking { 
+        setupService.installDependencies()
+    }
 
     return gatherer
 }

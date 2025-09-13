@@ -14,7 +14,8 @@ import org.sinytra.probe.base.SerializableTransformResult
 import org.sinytra.probe.base.TestEnvironment
 import org.sinytra.probe.base.TestReport
 import org.sinytra.probe.core.service.SetupService
-import org.sinytra.probe.gatherer.*
+import org.sinytra.probe.gatherer.GathererMain
+import org.sinytra.probe.gatherer.TestRunnerParams
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.nio.file.FileSystems
@@ -30,16 +31,29 @@ import kotlin.time.toDuration
 object ResultReporter {
     private val LOGGER: Logger = LoggerFactory.getLogger("ResultReporter")
 
-    val JSON = Json { 
+    val JSON = Json {
         namingStrategy = JsonNamingStrategy.SnakeCase
         decodeEnumsCaseInsensitive = true
     }
 
-    fun processResults(results: List<SerializableTransformResult>, duration: Duration, resultDir: Path, writeReport: Boolean, setup: SetupService, params: TestRunnerParams) {
+    data class Stats(
+        val compatible: Int,
+        val incompatible: Int,
+        val errored: Int,
+        val failed: Int
+    )
+
+    private fun getStats(results: List<SerializableTransformResult>): Stats {
         val compatible = results.count { it.result?.output?.success == true }
         val incompatible = results.count { it.result?.output?.success == false }
         val errored = results.count { it.result?.errors == true }
         val failed = results.count { it.result == null }
+
+        return Stats(compatible, incompatible, errored, failed)
+    }
+
+    fun processResults(results: List<SerializableTransformResult>, duration: Duration, resultDir: Path, writeReport: Boolean, setup: SetupService, params: TestRunnerParams) {
+        val (compatible, incompatible, errored, failed) = getStats(results)
 
         LOGGER.info("==== Test results summary ====")
         LOGGER.info("{} Compatible:\t\t\t{}", ICON_CHECK, compatible)
@@ -50,7 +64,7 @@ object ResultReporter {
 
         val resultsFile = resultDir / "results.json"
 
-        val transformLibPath = setup.getTransformLib().path
+        val transformLibPath = setup.getTransformLib(params.gameVersion).path
         val environment = TestEnvironment(
             getImplementationVersion(transformLibPath),
             getSHA256(transformLibPath),
@@ -79,10 +93,7 @@ object ResultReporter {
     }
 
     fun writeReport(dest: Path, results: List<SerializableTransformResult>, duration: String, params: TestRunnerParams) {
-        val compatible = results.count { it.result?.output?.success == true }
-        val incompatible = results.count { it.result?.output?.success == false }
-        val errored = results.count { it.result?.errors == true }
-        val failed = results.count { it.result == null }
+        val (compatible, incompatible, errored, failed) = getStats(results)
 
         val orderer = results.sortedBy { it.project.slug }
         val resultStatus: (SerializableTransformResult) -> String = {

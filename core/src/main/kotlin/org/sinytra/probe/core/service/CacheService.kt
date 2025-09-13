@@ -1,4 +1,4 @@
-package org.sinytra.probe.core.platform
+package org.sinytra.probe.core.service
 
 import io.lettuce.core.ExperimentalLettuceCoroutinesApi
 import io.lettuce.core.api.StatefulRedisConnection
@@ -6,8 +6,8 @@ import io.lettuce.core.api.coroutines
 import kotlinx.serialization.json.Json
 
 @OptIn(ExperimentalLettuceCoroutinesApi::class)
-class PlatformCache(
-    val redis: StatefulRedisConnection<String, String>
+class CacheService(
+    redis: StatefulRedisConnection<String, String>
 ) {
     val cmd = redis.coroutines()
 

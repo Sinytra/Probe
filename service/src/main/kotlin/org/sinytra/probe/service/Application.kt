@@ -4,6 +4,7 @@ import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.plugins.cors.routing.*
+import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.sinytra.probe.base.db.ProjectPlatform
@@ -17,10 +18,11 @@ import org.sinytra.probe.core.model.PostgresTestEnvironmentRepository
 import org.sinytra.probe.core.model.PostgresTestResultRepository
 import org.sinytra.probe.core.platform.GlobalPlatformService
 import org.sinytra.probe.core.platform.ModrinthPlatform
-import org.sinytra.probe.core.platform.PlatformCache
+import org.sinytra.probe.core.service.CacheService
 import org.sinytra.probe.core.service.PersistenceService
 import org.sinytra.probe.core.service.SetupService
 import org.sinytra.probe.core.service.TransformationService
+import org.sinytra.probe.service.api.configureStableRouting
 import kotlin.io.path.Path
 import kotlin.io.path.createDirectories
 import kotlin.io.path.div
@@ -36,29 +38,32 @@ fun Application.module() {
     val baseStoragePath = environment.config.propertyOrNull("probe.storageBasePath")?.getString()?.let(::Path) ?: Path(".")
     val useLocalCache = environment.config.propertyOrNull("probe.useLocalCache")?.getString() == "true"
     val nfrtVersion = environment.config.property("probe.nfrtVersion").getString()
-    val neoForgeVersion = environment.config.property("probe.neoForgeVersion").getString()
-    val gameVersion = environment.config.property("probe.gameVersion").getString()
-    val initialTransformerVersion = environment.config.propertyOrNull("probe.transformerVersion")?.getString()
+    val gameVersions = environment.config.property("probe.gameVersions").getList()
+
+    val redis = connectToRedis()
+    val cache = CacheService(redis)
 
     val setupDir = baseStoragePath / ".setup"
     setupDir.createDirectories()
-    val setup = SetupService(setupDir, useLocalCache, nfrtVersion, neoForgeVersion, initialTransformerVersion)
+    val setup = SetupService(setupDir, useLocalCache, nfrtVersion, gameVersions, cache)
 
-    val gameFiles = setup.installDependencies()
+    runBlocking { setup.installDependencies() }
 
     val testEnvironmentRepository = PostgresTestEnvironmentRepository()
     val modRepository = PostgresModRepository()
     val projectRepository = PostgresProjectRepository()
     val testResultsRepository = PostgresTestResultRepository()
 
-    val redis = connectToRedis()
-    val cache = PlatformCache(redis)
     val modrinth = ModrinthPlatform(baseStoragePath, cache)
     val platforms = GlobalPlatformService(mapOf(ProjectPlatform.MODRINTH to modrinth))
 
-    val transformation = TransformationService(baseStoragePath, platforms, gameFiles, setup)
-    val persistence = PersistenceService(modRepository, projectRepository, testResultsRepository, testEnvironmentRepository)
-    val envConfig = EnvironmentConfig(gameVersion, neoForgeVersion)
+    val transformation = TransformationService(baseStoragePath, platforms, setup)
+    val persistence = PersistenceService(
+        modRepository,
+        projectRepository,
+        testResultsRepository,
+        testEnvironmentRepository
+    )
 
     install(Authentication) {
         bearer("api-key") {
@@ -87,7 +92,7 @@ fun Application.module() {
 
     configureSerialization()
     configureDatabases()
-    configureRouting(setup, platforms, transformation, persistence, envConfig)
+    configureStableRouting(setup, platforms, transformation, persistence)
 
     transaction {
         SchemaUtils.create(TestEnvironmentTable)

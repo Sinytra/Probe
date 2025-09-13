@@ -15,7 +15,7 @@ import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
 @OptIn(FormatStringsInDatetimeFormats::class)
-abstract class CheckCompatCommandBase {
+abstract class CheckCompatCommandBase(private val gameVersion: String) {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(CheckCompatCommandBase::class.java)
         
@@ -39,7 +39,7 @@ abstract class CheckCompatCommandBase {
         }
 
         val result = try {
-            TransformRunner.runTransformation(platform, slug)
+            TransformRunner.runTransformation(platform, slug, gameVersion)
         } catch (e: ProjectNotFoundException) {
             response.respond {
                 content = ":warning: Project `${slug}` not found!"
