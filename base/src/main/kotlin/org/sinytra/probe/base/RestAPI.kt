@@ -45,6 +45,7 @@ sealed interface TestResponseBody {
 
     @Serializable
     data class Skipped(
+        val loader: String,
         val gameVersion: String,
 
         override val project: TestProjectDTO,

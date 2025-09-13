@@ -12,6 +12,7 @@ import org.sinytra.probe.base.db.ProjectPlatform
 import org.sinytra.probe.core.model.TestResult
 import org.sinytra.probe.core.platform.GlobalPlatformService
 import org.sinytra.probe.core.platform.ModrinthPlatform.Companion.LOADER_FABRIC
+import org.sinytra.probe.core.platform.ModrinthPlatform.Companion.LOADER_NEOFORGE
 import org.sinytra.probe.core.service.AsyncTransformationRunner
 import org.sinytra.probe.core.service.PersistenceService
 import org.sinytra.probe.core.service.SetupService
@@ -56,6 +57,7 @@ class RoutingImpl(
         if (ifNeoForge) {
             return call.respond(
                 TestResponseBody.Skipped(
+                    LOADER_NEOFORGE,
                     body.gameVersion,
                     testProject,
                     ResultType.NATIVE
