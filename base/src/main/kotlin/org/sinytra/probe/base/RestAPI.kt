@@ -6,9 +6,7 @@ import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonClassDiscriminator
 import org.sinytra.probe.base.db.ProjectPlatform
-
 
 @Serializable
 data class TestRequestBody(
@@ -18,7 +16,6 @@ data class TestRequestBody(
 )
 
 @Serializable
-@JsonClassDiscriminator("type")
 sealed interface TestResponseBody {
     val project: TestProjectDTO
     val type: ResultType
@@ -34,7 +31,7 @@ sealed interface TestResponseBody {
         val createdAt: LocalDateTime,
 
         override val project: TestProjectDTO,
-        override val type: ResultType = ResultType.TESTED
+        override val type: ResultType
     ) : TestResponseBody
 
     @Serializable
@@ -43,7 +40,7 @@ sealed interface TestResponseBody {
         val gameVersion: String,
 
         override val project: TestProjectDTO,
-        override val type: ResultType = ResultType.UNAVAILABLE
+        override val type: ResultType
     ) : TestResponseBody
 
     @Serializable
@@ -51,7 +48,7 @@ sealed interface TestResponseBody {
         val gameVersion: String,
 
         override val project: TestProjectDTO,
-        override val type: ResultType = ResultType.NATIVE
+        override val type: ResultType
     ) : TestResponseBody
 }
 
