@@ -7,9 +7,7 @@ import dev.kord.rest.builder.message.embed
 import kotlinx.datetime.format.FormatStringsInDatetimeFormats
 import kotlinx.datetime.toJavaLocalDateTime
 import org.sinytra.probe.base.ResultType
-import org.sinytra.probe.base.SkippedResponseBody
 import org.sinytra.probe.base.TestResponseBody
-import org.sinytra.probe.base.UnavailableResponseBody
 import org.slf4j.LoggerFactory
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -56,24 +54,24 @@ abstract class CheckCompatCommandBase(private val gameVersion: String) {
 
         when (result.type) {
             ResultType.TESTED -> {
-                response.respondTestResult(result as TestResponseBody)
+                response.respondTestResult(result as TestResponseBody.Tested)
             }
             ResultType.UNAVAILABLE -> {
-                response.respondUnavailableResult(result as UnavailableResponseBody)
+                response.respondUnavailableResult(result as TestResponseBody.Unavailable)
             }
             else -> {
-                response.respondSkippedTest(result as SkippedResponseBody)
+                response.respondSkippedTest(result as TestResponseBody.Skipped)
             }
         }
     }
 
-    private suspend fun DeferredMessageInteractionResponseBehavior.respondUnavailableResult(result: UnavailableResponseBody) {
+    private suspend fun DeferredMessageInteractionResponseBehavior.respondUnavailableResult(result: TestResponseBody.Unavailable) {
         respond {
             content = ":warning: Project `${result.project.slug}` is not available for ${result.loader.capitalize()} on ${result.gameVersion}"
         }
     }
 
-    private suspend fun DeferredMessageInteractionResponseBehavior.respondTestResult(result: TestResponseBody) {
+    private suspend fun DeferredMessageInteractionResponseBehavior.respondTestResult(result: TestResponseBody.Tested) {
         val green = Color(0, 255, 0)
         val red = Color(255, 0, 0)
         val link = result.project.url
@@ -123,7 +121,7 @@ abstract class CheckCompatCommandBase(private val gameVersion: String) {
         }
     }
 
-    suspend fun DeferredMessageInteractionResponseBehavior.respondSkippedTest(result: SkippedResponseBody) {
+    suspend fun DeferredMessageInteractionResponseBehavior.respondSkippedTest(result: TestResponseBody.Skipped) {
         val neoOrange = Color(215, 116, 47)
         val link = result.project.url
 

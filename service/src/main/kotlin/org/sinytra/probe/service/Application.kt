@@ -18,11 +18,14 @@ import org.sinytra.probe.core.model.PostgresTestEnvironmentRepository
 import org.sinytra.probe.core.model.PostgresTestResultRepository
 import org.sinytra.probe.core.platform.GlobalPlatformService
 import org.sinytra.probe.core.platform.ModrinthPlatform
+import org.sinytra.probe.core.service.AsyncTransformationRunner
 import org.sinytra.probe.core.service.CacheService
 import org.sinytra.probe.core.service.PersistenceService
 import org.sinytra.probe.core.service.SetupService
 import org.sinytra.probe.core.service.TransformationService
+import org.sinytra.probe.service.api.configureInternalRouting
 import org.sinytra.probe.service.api.configureStableRouting
+import org.sinytra.probe.service.impl.RoutingImpl
 import kotlin.io.path.Path
 import kotlin.io.path.createDirectories
 import kotlin.io.path.div
@@ -64,6 +67,10 @@ fun Application.module() {
         testResultsRepository,
         testEnvironmentRepository
     )
+    
+    val maxThreadCount = System.getenv("org.sinytra.probe.max_threads")?.toIntOrNull() ?: 10
+    val asyncTransform = AsyncTransformationRunner(transformation, persistence, maxThreadCount)
+    val routingImpl = RoutingImpl(setup, platforms, persistence, asyncTransform)
 
     install(Authentication) {
         bearer("api-key") {
@@ -92,7 +99,8 @@ fun Application.module() {
 
     configureSerialization()
     configureDatabases()
-    configureStableRouting(setup, platforms, transformation, persistence)
+    configureStableRouting(setup, routingImpl)
+    configureInternalRouting(routingImpl)
 
     transaction {
         SchemaUtils.create(TestEnvironmentTable)

@@ -6,7 +6,6 @@ plugins {
 
 group = "org.sinytra.probe"
 
-val neoForgeVersion: String by rootProject
 val gameVersion: String by rootProject
 val dockerImage = "sinytra/probe/service"
 
@@ -59,6 +58,8 @@ dependencies {
     implementation(libs.ktor.server.content.negotiation)
     implementation(libs.ktor.server.auth)
     implementation(libs.ktor.server.cors)
+    implementation(libs.ktor.openapi)
+    implementation(libs.ktor.swagger.ui)
     implementation(libs.postgresql)
     implementation(libs.h2)
     implementation(libs.lettuce)

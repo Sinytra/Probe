@@ -33,7 +33,7 @@ class RoutingImpl(
 
     suspend fun testMod(body: TestRequestBody, call: RoutingCall) {
         if (body.platform != ProjectPlatform.MODRINTH) {
-            throw NotImplementedError("Unsupported platform ${body.platform}")
+            return call.respond(HttpStatusCode.BadRequest, "Unsupported platform ${body.platform}")
         }
 
         if (!setup.hasGameVersion(body.gameVersion)) {
@@ -55,7 +55,7 @@ class RoutingImpl(
         val ifNeoForge = platforms.isNeoForgeAvailable(project, body.gameVersion)
         if (ifNeoForge) {
             return call.respond(
-                SkippedResponseBody(
+                TestResponseBody.Skipped(
                     body.gameVersion,
                     testProject,
                     ResultType.NATIVE
@@ -65,7 +65,7 @@ class RoutingImpl(
 
         val resolved = platforms.resolveProject(project, body.gameVersion)
             ?: return call.respond(
-                UnavailableResponseBody(
+                TestResponseBody.Unavailable(
                     LOADER_FABRIC,
                     body.gameVersion,
                     testProject,
@@ -82,7 +82,7 @@ class RoutingImpl(
             val version = platforms.getVersion(project, result.versionId)
             val envDto = TestEnvironmentDTO(testEnvironment.connectorVersion, testEnvironment.gameVersion, testEnvironment.neoForgeVersion)
 
-            val response = TestResponseBody(
+            val response = TestResponseBody.Tested(
                 result.modid,
                 version?.versionNumber,
                 version?.versionId,

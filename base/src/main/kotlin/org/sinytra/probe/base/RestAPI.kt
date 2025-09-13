@@ -1,8 +1,14 @@
+@file:OptIn(ExperimentalSerializationApi::class)
+
 package org.sinytra.probe.base
 
 import kotlinx.datetime.LocalDateTime
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonClassDiscriminator
 import org.sinytra.probe.base.db.ProjectPlatform
+
 
 @Serializable
 data class TestRequestBody(
@@ -11,15 +17,51 @@ data class TestRequestBody(
     val gameVersion: String
 )
 
-interface ResponseBase {
+@Serializable
+@JsonClassDiscriminator("type")
+sealed interface TestResponseBody {
     val project: TestProjectDTO
     val type: ResultType
+
+    @Serializable
+    data class Tested(
+        val modid: String?,
+        val versionNumber: String?,
+        val versionId: String?,
+        val passing: Boolean,
+
+        val environment: TestEnvironmentDTO,
+        val createdAt: LocalDateTime,
+
+        override val project: TestProjectDTO,
+        override val type: ResultType = ResultType.TESTED
+    ) : TestResponseBody
+
+    @Serializable
+    data class Unavailable(
+        val loader: String,
+        val gameVersion: String,
+
+        override val project: TestProjectDTO,
+        override val type: ResultType = ResultType.UNAVAILABLE
+    ) : TestResponseBody
+
+    @Serializable
+    data class Skipped(
+        val gameVersion: String,
+
+        override val project: TestProjectDTO,
+        override val type: ResultType = ResultType.NATIVE
+    ) : TestResponseBody
 }
 
 @Serializable
 enum class ResultType {
+    @SerialName("tested")
     TESTED,
+    @SerialName("native")
     NATIVE,
+    @SerialName("unavailable")
     UNAVAILABLE
 }
 
@@ -35,39 +77,8 @@ data class TestProjectDTO(
 )
 
 @Serializable
-data class UnavailableResponseBody(
-    val loader: String,
-    val gameVersion: String,
-
-    override val project: TestProjectDTO,
-    override val type: ResultType
-) : ResponseBase
-
-@Serializable
 data class TestEnvironmentDTO(
     val connectorVersion: String,
     val gameVersion: String,
     val neoforgeVersion: String
 )
-
-@Serializable
-data class TestResponseBody(
-    val modid: String?,
-    val versionNumber: String?,
-    val versionId: String?,
-    val passing: Boolean,
-
-    val environment: TestEnvironmentDTO,
-    val createdAt: LocalDateTime,
-
-    override val project: TestProjectDTO,
-    override val type: ResultType
-) : ResponseBase
-
-@Serializable
-data class SkippedResponseBody(
-    val gameVersion: String,
-
-    override val project: TestProjectDTO,
-    override val type: ResultType
-) : ResponseBase
