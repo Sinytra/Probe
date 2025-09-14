@@ -41,7 +41,7 @@ class RoutingImpl(
             return call.respond(HttpStatusCode.BadRequest, "Game version ${body.gameVersion} is not supported")
         }
 
-        val project = platforms.getProject(body.platform, body.id)
+        val project = platforms.getProject(body.platform, body.slug)
             ?: return call.respond(HttpStatusCode.NotFound)
         val testProject = TestProjectDTO(
             project.id,
@@ -56,7 +56,7 @@ class RoutingImpl(
         val ifNeoForge = platforms.isNeoForgeAvailable(project, body.gameVersion)
         if (ifNeoForge) {
             return call.respond(
-                TestResponseBody.Skipped(
+                TestResponseBody.Native(
                     LOADER_NEOFORGE,
                     body.gameVersion,
                     testProject,

@@ -61,7 +61,7 @@ object TransformRunner {
         return when (base.type) {
             ResultType.TESTED -> resp.body<TestResponseBody.Tested>()
             ResultType.UNAVAILABLE -> resp.body<TestResponseBody.Unavailable>()
-            else -> resp.body<TestResponseBody.Skipped>()
+            else -> resp.body<TestResponseBody.Native>()
         }
     }
 }

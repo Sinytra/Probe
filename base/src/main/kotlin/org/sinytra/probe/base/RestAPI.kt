@@ -11,7 +11,7 @@ import org.sinytra.probe.base.db.ProjectPlatform
 @Serializable
 data class TestRequestBody(
     val platform: ProjectPlatform,
-    val id: String,
+    val slug: String,
     val gameVersion: String
 )
 
@@ -44,7 +44,7 @@ sealed interface TestResponseBody {
     ) : TestResponseBody
 
     @Serializable
-    data class Skipped(
+    data class Native(
         val loader: String,
         val gameVersion: String,
 

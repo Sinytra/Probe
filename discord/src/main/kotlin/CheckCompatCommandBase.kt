@@ -60,7 +60,7 @@ abstract class CheckCompatCommandBase(private val gameVersion: String) {
                 response.respondUnavailableResult(result as TestResponseBody.Unavailable)
             }
             else -> {
-                response.respondSkippedTest(result as TestResponseBody.Skipped)
+                response.respondSkippedTest(result as TestResponseBody.Native)
             }
         }
     }
@@ -121,7 +121,7 @@ abstract class CheckCompatCommandBase(private val gameVersion: String) {
         }
     }
 
-    suspend fun DeferredMessageInteractionResponseBehavior.respondSkippedTest(result: TestResponseBody.Skipped) {
+    suspend fun DeferredMessageInteractionResponseBehavior.respondSkippedTest(result: TestResponseBody.Native) {
         val neoOrange = Color(215, 116, 47)
         val link = result.project.url
 
