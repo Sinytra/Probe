@@ -43,7 +43,7 @@ object TransformRunner {
             }
         }
 
-        val parsedPlatform = ProjectPlatform.valueOf(platform)
+        val parsedPlatform = ProjectPlatform.valueOf(platform.uppercase())
         val resp = client.post("/api/v1/probe") {
             contentType(ContentType.Application.Json)
             setBody(TestRequestBody(parsedPlatform, slug, gameVersion))
