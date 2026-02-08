@@ -60,7 +60,7 @@ class TransformationService(
         return TransformationResult(
             project.version.projectId,
             project.version.versionId,
-            otherFiles.map(ProjectVersion::projectId),
+            otherFiles.map(ProjectResolvedVersion::projectId),
             result?.success ?: false,
             result?.primaryModid
         )
@@ -73,7 +73,7 @@ class TransformationService(
         return listOf(ffapi.getFilePath(storagePath))
     }
 
-    private fun ResolvedProject.flattenDependencies(): List<ProjectVersion> =
+    private fun ResolvedProject.flattenDependencies(): List<ProjectResolvedVersion> =
         generateSequence(dependencies) { projects ->
             projects.flatMap { it.dependencies }.takeIf { it.isNotEmpty() }
         }

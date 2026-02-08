@@ -18,13 +18,21 @@ import kotlin.io.path.*
 private const val REQUIRED_DEP: String = "required"
 
 @Serializable
+data class ModrinthProjectVersion(
+    override val projectId: String,
+    override val versionId: String,
+    override val versionNumber: String,
+    override val dependencies: List<String>
+) : ProjectVersion
+
+@Serializable
 data class ModrinthResolvedVersion(
     override val projectId: String,
     override val versionId: String,
     override val versionNumber: String,
     override val path: String,
     override val dependencies: List<String>
-) : ProjectVersion
+) : ProjectResolvedVersion
 
 class ModrinthPlatform(
     private val storagePath: Path,
@@ -64,19 +72,31 @@ class ModrinthPlatform(
     }
 
     override suspend fun getVersion(slug: String, versionId: String): ProjectVersion? {
-        val key = versionKey(versionId)
+        val version = getCachedMRVersion(slug, versionId) ?: return null
+        val dependencies = version.dependencies
+            .filter { it.dependencyType == REQUIRED_DEP && it.projectId != FAPI_ID }
+            .map(ModrinthVersionDependency::projectId)
+        val projectVersion = ModrinthProjectVersion(version.projectId, version.id, version.versionNumber, dependencies)
 
-        cache.getObject<ModrinthResolvedVersion>(key)
-            ?.let { return it }
+        return projectVersion
+    }
 
-        LOGGER.info("Fetching '{}' version {}", slug, versionId)
-
-        val version = ModrinthAPI.getVersion(versionId) ?: return null
+    override suspend fun getResolvedVersion(slug: String, versionId: String): ProjectResolvedVersion? {
+        val version = getCachedMRVersion(slug, versionId) ?: return null
         val resolved = downloadVersionFile(version)
-
-        cache.setObject(key, resolved)
-
         return resolved
+    }
+
+    suspend fun getCachedMRVersion(slug: String, versionId: String): ModrinthVersion? {
+        val key = versionKey(versionId)
+        val version = cache.getObject<ModrinthVersion>(key)
+            ?: coroutineScope {
+                LOGGER.info("Fetching '{}' version {}", slug, versionId)
+                ModrinthAPI.getVersion(versionId)
+            }
+            ?: return null
+        cache.setObject(key, version)
+        return version
     }
 
     suspend fun hasVersion(versionId: String): Boolean {
@@ -114,7 +134,7 @@ class ModrinthPlatform(
         return resolveProjectInternal(project.id, gameVersions.first(), gameVersions, fallbackLoader)
     }
 
-    override suspend fun resolveProjectVersion(slug: String, gameVersion: String, loader: String): ProjectVersion? =
+    override suspend fun resolveProjectVersion(slug: String, gameVersion: String, loader: String): ProjectResolvedVersion? =
         getOrComputeVersion(slug, gameVersion, listOf(gameVersion), loader, false)
 
     suspend fun searchProjects(limit: Int, offset: Int, gameVersion: String, loader: String, excludeLoader: String?): List<ProjectSearchResult>? =

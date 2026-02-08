@@ -123,7 +123,7 @@ class ModTestRunner(
             val results = candidates.map { proj ->
                 async(dispatcher) {
                     semaphore.withPermit {
-                        val version = modrinth.getVersion(proj.slug, proj.versionId)
+                        val version = modrinth.getResolvedVersion(proj.slug, proj.versionId)
                             ?: throw IllegalStateException("Missing version for ${proj.slug}")
                         val versionFile = modsDir / version.path
 
