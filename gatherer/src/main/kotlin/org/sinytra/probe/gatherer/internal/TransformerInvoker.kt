@@ -51,7 +51,9 @@ class TransformerInvoker(
             stripAnsiCodes(outputLog)
             stripAnsiCodes(errorLog)
 
-            if (errorLog.readText().isNotEmpty()) {
+            val errorText = errorLog.readText()
+            val filteredLines = errorText.lines().filterNot { it.isBlank() || it.contains("Picked up JAVA_TOOL_OPTIONS") }
+            if (filteredLines.isNotEmpty()) {
                 LOGGER.error("{} Got errors while transforming {}", ICON_WARN, slug)
                 errors = true
             }

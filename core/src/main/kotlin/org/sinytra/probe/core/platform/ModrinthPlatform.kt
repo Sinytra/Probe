@@ -67,14 +67,7 @@ class ModrinthPlatform(
         val key = versionKey(versionId)
 
         cache.getObject<ModrinthResolvedVersion>(key)
-            ?.let {
-                val path = storagePath.resolve(it.path)
-                if (!path.exists()) {
-                    cache.del(key)
-                    return@let null
-                }
-                return it
-            }
+            ?.let { return it }
 
         LOGGER.info("Fetching '{}' version {}", slug, versionId)
 

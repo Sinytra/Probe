@@ -54,7 +54,8 @@ class TransformationService(
             null
         }
 
-        workDir.deleteRecursively()
+        // Cleanup files
+        workDir.parent.deleteRecursively()
 
         return TransformationResult(
             project.version.projectId,

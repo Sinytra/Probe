@@ -9,10 +9,12 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import org.sinytra.probe.base.*
 import org.sinytra.probe.base.db.ProjectPlatform
+import org.sinytra.probe.core.model.TestEnvironment
 import org.sinytra.probe.core.model.TestResult
 import org.sinytra.probe.core.platform.GlobalPlatformService
 import org.sinytra.probe.core.platform.ModrinthPlatform.Companion.LOADER_FABRIC
 import org.sinytra.probe.core.platform.ModrinthPlatform.Companion.LOADER_NEOFORGE
+import org.sinytra.probe.core.platform.PlatformProject
 import org.sinytra.probe.core.service.AsyncTransformationRunner
 import org.sinytra.probe.core.service.PersistenceService
 import org.sinytra.probe.core.service.SetupService
@@ -65,21 +67,20 @@ class RoutingImpl(
             )
         }
 
-        val resolved = platforms.resolveProject(project, body.gameVersion)
-            ?: return call.respond(
-                TestResponseBody.Unavailable(
-                    LOADER_FABRIC,
-                    body.gameVersion,
-                    testProject,
-                    ResultType.UNAVAILABLE
-                )
-            )
-
         liveResourceLock.read {
             val neoForgeVersion = setup.getNeoForgeVersion(body.gameVersion)
             val transformer = setup.getTransformLib(body.gameVersion)
             val testEnvironment = persistence.getOrCreateTestEnvironment(transformer.version, body.gameVersion, neoForgeVersion)
-            val result: TestResult = asyncTransform.transform(project, resolved, testEnvironment)
+
+            val result: TestResult = getOrRunTest(project, testEnvironment)
+                ?: return call.respond(
+                    TestResponseBody.Unavailable(
+                        LOADER_FABRIC,
+                        body.gameVersion,
+                        testProject,
+                        ResultType.UNAVAILABLE
+                    )
+                )
 
             val version = platforms.getVersion(project, result.versionId)
             val envDto = TestEnvironmentDTO(testEnvironment.connectorVersion, testEnvironment.gameVersion, testEnvironment.neoForgeVersion)
@@ -99,6 +100,15 @@ class RoutingImpl(
 
             call.respond(response)
         }
+    }
+
+    suspend fun getOrRunTest(project: PlatformProject, testEnvironment: TestEnvironment): TestResult? {
+        val existing = persistence.getExistingResult(project, testEnvironment)
+        if (existing != null) {
+            return existing
+        }
+        val resolved = platforms.resolveProject(project, testEnvironment.gameVersion) ?: return null
+        return asyncTransform.transform(project, resolved, testEnvironment)
     }
 
     suspend fun importTestReport(body: TestReport) = coroutineScope {

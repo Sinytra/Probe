@@ -29,6 +29,7 @@ data class ResolvedProject(
 
 interface PlatformService {
     suspend fun getProject(slug: String): PlatformProject?
+    // Does not guarantee that the version file exists
     suspend fun getVersion(slug: String, versionId: String): ProjectVersion?
     suspend fun isNeoForgeAvailable(project: PlatformProject, gameVersion: String): Boolean
     suspend fun resolveProject(project: PlatformProject, gameVersion: String): ResolvedProject?
@@ -42,7 +43,7 @@ class GlobalPlatformService(private val platforms: Map<ProjectPlatform, Platform
 
     suspend fun getProject(platform: ProjectPlatform, slug: String): PlatformProject? =
         getPlatform(platform).getProject(slug)
-    
+
     suspend fun isNeoForgeAvailable(project: PlatformProject, gameVersion: String): Boolean =
         getPlatform(project.platform).isNeoForgeAvailable(project, gameVersion)
 

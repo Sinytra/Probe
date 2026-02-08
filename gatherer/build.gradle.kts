@@ -83,7 +83,7 @@ tasks {
             "TEST_COUNT" to 10
         )
     }
-    
+
     jar {
         manifest {
             attributes(
@@ -100,6 +100,16 @@ tasks {
 jib {
     from {
         image = "eclipse-temurin:21-jdk"
+        platforms {
+            platform {
+                architecture = "amd64"
+                os = "linux"
+            }
+            platform {
+                architecture = "arm64"
+                os = "linux"
+            }
+        }
     }
     to {
         setImage(
