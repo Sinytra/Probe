@@ -72,6 +72,13 @@ fun Application.configureInternalRouting(routingImpl: RoutingImpl) {
         }
 
         authenticate("api-key") {
+            get("/api/v1/internal/stats") {
+                val limit = call.request.queryParameters["limit"]?.toInt() ?: 50
+                val stats = routingImpl.statsService.getModRequestedStats(limit)
+
+                call.respond(HttpStatusCode.OK, stats)
+            }
+
             post("/api/v1/internal/import") {
                 val body = call.receive<TestReport>()
 

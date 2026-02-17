@@ -22,6 +22,7 @@ import org.sinytra.probe.core.service.AsyncTransformationRunner
 import org.sinytra.probe.core.service.CacheService
 import org.sinytra.probe.core.service.PersistenceService
 import org.sinytra.probe.core.service.SetupService
+import org.sinytra.probe.core.service.StatsService
 import org.sinytra.probe.core.service.TransformationService
 import org.sinytra.probe.service.api.configureInternalRouting
 import org.sinytra.probe.service.api.configureStableRouting
@@ -70,7 +71,8 @@ fun Application.module() {
     
     val maxThreadCount = System.getenv("org.sinytra.probe.max_threads")?.toIntOrNull() ?: 10
     val asyncTransform = AsyncTransformationRunner(transformation, persistence, maxThreadCount)
-    val routingImpl = RoutingImpl(setup, platforms, persistence, asyncTransform)
+    val statsService = StatsService(cache)
+    val routingImpl = RoutingImpl(setup, platforms, persistence, asyncTransform, statsService)
 
     install(Authentication) {
         bearer("api-key") {

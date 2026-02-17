@@ -18,6 +18,7 @@ import org.sinytra.probe.core.platform.PlatformProject
 import org.sinytra.probe.core.service.AsyncTransformationRunner
 import org.sinytra.probe.core.service.PersistenceService
 import org.sinytra.probe.core.service.SetupService
+import org.sinytra.probe.core.service.StatsService
 import org.slf4j.LoggerFactory
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
@@ -30,7 +31,8 @@ class RoutingImpl(
     private val setup: SetupService,
     private val platforms: GlobalPlatformService,
     private val persistence: PersistenceService,
-    private val asyncTransform: AsyncTransformationRunner
+    private val asyncTransform: AsyncTransformationRunner,
+    val statsService: StatsService
 ) {
     val liveResourceLock = ReentrantReadWriteLock()
 
@@ -97,6 +99,8 @@ class RoutingImpl(
                 testProject,
                 ResultType.TESTED
             )
+
+            statsService.addModRequestedStat(body.slug)
 
             call.respond(response)
         }

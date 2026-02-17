@@ -3,6 +3,8 @@ package org.sinytra.probe.core.service
 import io.lettuce.core.ExperimentalLettuceCoroutinesApi
 import io.lettuce.core.api.StatefulRedisConnection
 import io.lettuce.core.api.coroutines
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.toList
 import kotlinx.serialization.json.Json
 
 @OptIn(ExperimentalLettuceCoroutinesApi::class)
@@ -22,6 +24,14 @@ class CacheService(
 
     suspend inline fun exists(key: String): Boolean =
         cmd.exists(key) == 1L
+
+    suspend inline fun hashIncrBy(key: String, field: String, by: Long): Long? =
+        cmd.hincrby(key, field, by)
+
+    suspend inline fun hashGetStats(key: String): List<Pair<String, Long>> =
+        cmd.hgetall(key)
+            .map { kv -> kv.key to kv.value.toLong() }
+            .toList()
 
     suspend inline fun <reified T> getObject(key: String): T? =
         cmd.get(key)?.let { Json.decodeFromString<T>(it) }
