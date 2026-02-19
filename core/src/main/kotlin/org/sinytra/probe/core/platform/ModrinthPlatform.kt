@@ -225,7 +225,7 @@ class ModrinthPlatform(
 
                 val res = downloadVersionFile(ver)
                 cache.setObject(key, res)
-                cache.setObject(versionKey(ver.id), res)
+                cache.setObject(versionKey(ver.id), ver)
                 res
             }
     }
