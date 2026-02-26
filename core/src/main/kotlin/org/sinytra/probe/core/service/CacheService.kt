@@ -6,18 +6,24 @@ import io.lettuce.core.api.coroutines
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.serialization.json.Json
+import java.time.Duration
 
 @OptIn(ExperimentalLettuceCoroutinesApi::class)
 class CacheService(
     redis: StatefulRedisConnection<String, String>
 ) {
     val cmd = redis.coroutines()
+    val defaultExpiration: Duration = Duration.ofDays(100)
 
     suspend inline fun get(key: String): String? =
         cmd.get(key)
 
-    suspend inline fun set(key: String, value: String) =
+    suspend inline fun set(key: String, value: String, expiry: Duration? = defaultExpiration) {
         cmd.set(key, value)
+        if (expiry != null) {
+            cmd.expire(key, expiry)
+        }
+    }
 
     suspend inline fun del(key: String) =
         cmd.del(key)
@@ -36,7 +42,10 @@ class CacheService(
     suspend inline fun <reified T> getObject(key: String): T? =
         cmd.get(key)?.let { Json.decodeFromString<T>(it) }
 
-    suspend inline fun <reified T> setObject(key: String, value: T) {
+    suspend inline fun <reified T> setObject(key: String, value: T, expiry: Duration? = defaultExpiration) {
         cmd.set(key, Json.encodeToString(value))
+        if (expiry != null) {
+            cmd.expire(key, expiry)
+        }
     }
 }

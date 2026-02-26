@@ -9,6 +9,7 @@ import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.logging.*
 import io.ktor.client.plugins.resources.*
+import io.ktor.client.plugins.resources.Resources
 import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.resources.*
@@ -133,8 +134,8 @@ object ModrinthAPI {
             .takeIf { it.status.isSuccess() }
             ?.body<ModrinthVersion>()
 
-    suspend fun getCandidateVersion(projectId: String, gameVersions: List<String>, loader: String): ModrinthVersion? =
-        client.get(
+    suspend fun getCandidateVersion(projectId: String, gameVersions: List<String>, loader: String): ModrinthVersion? {
+        val versions = client.get(
             Projects.Id.Version(
                 Projects.Id(id = projectId),
                 loaders = "[\"${loader}\"]",
@@ -143,10 +144,17 @@ object ModrinthAPI {
         )
             .takeIf { it.status.isSuccess() }
             ?.body<List<ModrinthVersion>>()
-            ?.minByOrNull {
-                val fileGameVersions = it.gameVersions.sortedBy(gameVersions::indexOf)
-                gameVersions.indexOf(fileGameVersions.first())
-            }
+
+        if (versions == null) return null
+
+        // Priority order is defined by the order inside gameVersions
+        for (target in gameVersions) {
+            val match = versions.firstOrNull { target in it.gameVersions }
+            if (match != null) return match
+        }
+
+        return null
+    }
 
     suspend fun searchProjects(limit: Int, offset: Int, gameVersion: String, loader: String, excludeLoader: String?): ModrinthSearchResults? =
         client

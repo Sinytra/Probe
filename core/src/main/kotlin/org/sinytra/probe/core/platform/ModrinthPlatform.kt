@@ -6,10 +6,10 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import org.sinytra.probe.base.ProjectSearchResult
-import org.sinytra.probe.core.platform.ModrinthAPI.ModrinthVersionDependency
-import org.sinytra.probe.core.platform.ModrinthAPI.ModrinthVersion
-import org.sinytra.probe.core.platform.ModrinthAPI.ModrinthSearchResult
 import org.sinytra.probe.core.platform.ModrinthAPI.ModrinthProject
+import org.sinytra.probe.core.platform.ModrinthAPI.ModrinthSearchResult
+import org.sinytra.probe.core.platform.ModrinthAPI.ModrinthVersion
+import org.sinytra.probe.core.platform.ModrinthAPI.ModrinthVersionDependency
 import org.sinytra.probe.core.service.CacheService
 import org.slf4j.LoggerFactory
 import java.nio.file.Path
