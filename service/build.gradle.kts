@@ -27,6 +27,7 @@ application {
 
 ktor {
     docker {
+        jreVersion.set(JavaVersion.VERSION_25)
         customBaseImage = "eclipse-temurin:25-jdk" // JDK is required for NFRT
         localImageName.set(dockerImage)
         imageTag.set(version.toString())
