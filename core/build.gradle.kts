@@ -10,7 +10,7 @@ val transfomer: Configuration by configurations.creating {
     isTransitive = false
 }
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 
 repositories {
     mavenCentral()

@@ -13,8 +13,12 @@ val compatibleGameVersions: String by rootProject
 val nfrtVersion: String by rootProject
 val dockerImage = "sinytra/probe/gatherer"
 
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(25)
+}
+
 kotlin {
-    jvmToolchain(21)
+    jvmToolchain(25)
 }
 
 application {
@@ -99,7 +103,7 @@ tasks {
 
 jib {
     from {
-        image = "eclipse-temurin:21-jdk"
+        image = "eclipse-temurin:25-jdk"
         platforms {
             platform {
                 architecture = "amd64"

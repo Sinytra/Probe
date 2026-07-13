@@ -2,7 +2,6 @@
 
 package org.sinytra.probe.gatherer.internal
 
-import kotlinx.datetime.Clock
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNamingStrategy
@@ -24,6 +23,7 @@ import java.security.MessageDigest
 import java.util.jar.Attributes
 import java.util.jar.Manifest
 import kotlin.io.path.*
+import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration

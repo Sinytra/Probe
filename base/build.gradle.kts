@@ -5,7 +5,7 @@ plugins {
 
 group = "org.sinytra.probe"
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 
 repositories {
     mavenCentral()

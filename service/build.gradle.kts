@@ -9,7 +9,7 @@ group = "org.sinytra.probe"
 val gameVersion: String by rootProject
 val dockerImage = "sinytra/probe/service"
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 
 application {
     mainClass = "org.sinytra.probe.service.ApplicationKt"
@@ -27,7 +27,7 @@ application {
 
 ktor {
     docker {
-        customBaseImage = "eclipse-temurin:21-jdk" // JDK is required for NFRT
+        customBaseImage = "eclipse-temurin:25-jdk" // JDK is required for NFRT
         localImageName.set(dockerImage)
         imageTag.set(version.toString())
         externalRegistry.set(
@@ -60,6 +60,8 @@ dependencies {
     implementation(libs.ktor.server.cors)
     implementation(libs.ktor.openapi)
     implementation(libs.ktor.swagger.ui)
+    implementation(libs.schema.kenerator.core)
+    implementation(libs.schema.kenerator.swagger)
     implementation(libs.postgresql)
     implementation(libs.h2)
     implementation(libs.lettuce)

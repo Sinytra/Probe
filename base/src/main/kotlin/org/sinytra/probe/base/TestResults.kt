@@ -1,7 +1,7 @@
 package org.sinytra.probe.base
 
-import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
+import kotlin.time.Instant
 
 @Serializable
 data class ProjectSearchResult(

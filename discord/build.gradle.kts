@@ -35,12 +35,12 @@ tasks {
 }
 
 kotlin {
-    jvmToolchain(21)
+    jvmToolchain(25)
 }
 
 jib {
     from {
-        image = "eclipse-temurin:21-jre"
+        image = "eclipse-temurin:25-jre"
     }
     to {
         setImage(
