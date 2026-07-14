@@ -53,7 +53,7 @@ class TransformerInvoker(
 
             val errorText = errorLog.readText()
             val filteredLines = errorText.lines().filterNot { it.isBlank() || it.contains("Picked up JAVA_TOOL_OPTIONS") }
-            if (filteredLines.isNotEmpty()) {
+            if (filteredLines.contains("exception")) {
                 LOGGER.error("{} Got errors while transforming {}", ICON_WARN, slug)
                 errors = true
             }
