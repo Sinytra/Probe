@@ -1,6 +1,8 @@
 package org.sinytra.probe.core.service
 
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.lang.ProcessBuilder.Redirect
@@ -76,7 +78,6 @@ class SetupService(
             "java", "-jar", nfrt.path.absolutePathString(),
             "run", "--neoforge", neoMavenCoords, "--dist", "joined",
             "--write-result=gameJar:${compiledArtifact.fileName}",
-            "--write-result=vanillaDeobfuscated:${cleanArtifact.fileName}",
             "--work-dir", workDir.absolutePathString()
         )
 
@@ -90,12 +91,17 @@ class SetupService(
             args += "--verbose"
         }
 
-        ProcessBuilder(args)
-            .directory(outputDir.toFile())
-            .redirectOutput(Redirect.INHERIT)
-            .redirectError(Redirect.INHERIT)
-            .start()
-            .waitFor(60, TimeUnit.MINUTES)
+        withContext(Dispatchers.IO) {
+            val proc = ProcessBuilder(args)
+                .directory(outputDir.toFile())
+                .redirectOutput(Redirect.INHERIT)
+                .redirectError(Redirect.INHERIT)
+                .start()
+            proc.waitFor(60, TimeUnit.MINUTES)
+
+            val code = proc.exitValue()
+            LOGGER.info("NFRT exited with code: {}", code)
+        }
 
         getTransformLib(gameVersion)
 

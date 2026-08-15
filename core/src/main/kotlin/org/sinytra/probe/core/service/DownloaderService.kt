@@ -35,10 +35,7 @@ class DownloaderService(
             version.contains("+") && version.split("+")[1] == gameVersion
         }
         private val NEO_UNIVERSAL_LIB = Library("net.neoforged", "neoforge", "universal", NEO_MAVEN)
-        { gameVersion, version ->
-            val qualifier = gameVersion.split(".", limit = 2)[1]
-            version.startsWith("$qualifier.")
-        }
+        { gameVersion, version -> version.startsWith("$gameVersion.") }
         private val NFRT_LIB = Library("net.neoforged", "neoform-runtime", "all", NEO_MAVEN) { _, _ -> true }
 
         fun downloadFile(url: String, dest: Path) {
