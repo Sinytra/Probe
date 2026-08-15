@@ -5,8 +5,8 @@ import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.plugins.cors.routing.*
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.exposed.sql.SchemaUtils
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.SchemaUtils
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.sinytra.probe.base.db.ProjectPlatform
 import org.sinytra.probe.core.db.ModTable
 import org.sinytra.probe.core.db.ProjectTable

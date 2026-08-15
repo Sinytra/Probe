@@ -1,6 +1,7 @@
 package org.sinytra.probe.core.model
 
-import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
 import org.sinytra.probe.core.db.TestEnvironmentDAO
 import org.sinytra.probe.core.db.TestEnvironmentTable
 import org.sinytra.probe.core.db.daoToModel

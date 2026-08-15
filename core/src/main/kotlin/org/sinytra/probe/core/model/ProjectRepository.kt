@@ -1,9 +1,9 @@
 package org.sinytra.probe.core.model
 
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.update
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
+import org.jetbrains.exposed.v1.jdbc.update
 import org.sinytra.probe.base.db.Project
 import org.sinytra.probe.base.db.ProjectPlatform
 import org.sinytra.probe.core.db.*

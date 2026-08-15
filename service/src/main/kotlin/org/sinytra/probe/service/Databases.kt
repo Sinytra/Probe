@@ -1,9 +1,11 @@
 package org.sinytra.probe.service
 
 import io.ktor.server.application.*
+import io.lettuce.core.ClientOptions
+import io.lettuce.core.MaintNotificationsConfig
 import io.lettuce.core.RedisClient
 import io.lettuce.core.api.StatefulRedisConnection
-import org.jetbrains.exposed.sql.Database
+import org.jetbrains.exposed.v1.jdbc.Database
 import java.sql.Connection
 
 fun Application.configureDatabases() {
@@ -35,7 +37,7 @@ fun Application.connectToPostgres(embedded: Boolean) {
     Class.forName("org.postgresql.Driver")
     if (embedded) {
         log.info("Using embedded H2 database for testing; replace this flag to use postgres")
-        Database.connect("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "root", "")
+        Database.connect("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", driver = "org.h2.Driver", user = "root", password = "")
     } else {
         val url = environment.config.property("postgres.url").getString()
         log.info("Connecting to postgres database at $url")
@@ -50,5 +52,8 @@ fun Application.connectToRedis(): StatefulRedisConnection<String, String> {
     val url = environment.config.property("redis.url").getString()
     log.info("Connecting to redis instance")
     val redisClient = RedisClient.create(url)
+    redisClient.options = ClientOptions.builder()
+        .maintNotificationsConfig(MaintNotificationsConfig.disabled())
+        .build()
     return redisClient.connect()
 }

@@ -24,7 +24,7 @@ services:
     networks:
       - probe
   cache:
-    image: redis:8.0-rc1
+    image: redis:8.10.0
     ports:
       - "6379:6379"
     networks:
