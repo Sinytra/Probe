@@ -35,8 +35,17 @@ class DownloaderService(
             version.contains("+") && version.split("+")[1] == gameVersion
         }
         private val NEO_UNIVERSAL_LIB = Library("net.neoforged", "neoforge", "universal", NEO_MAVEN)
-        { gameVersion, version -> version.startsWith("$gameVersion.") }
+        { gameVersion, version -> version.startsWith(getNeoForgeVersionPrefix(gameVersion)) }
         private val NFRT_LIB = Library("net.neoforged", "neoform-runtime", "all", NEO_MAVEN) { _, _ -> true }
+
+        fun getNeoForgeVersionPrefix(gameVersion: String): String {
+            val parts = gameVersion.split('.')
+            return if (parts.first() == "1") {
+                "${parts[1]}.${parts.getOrElse(2) { "0" }}."
+            } else {
+                "${parts[0]}.${parts.getOrElse(1) { "0" }}.${parts.getOrElse(2) { "0" }}."
+            }
+        }
 
         fun downloadFile(url: String, dest: Path) {
             if (!dest.exists()) {
@@ -132,7 +141,7 @@ class DownloaderService(
             LOGGER.error("Error fetching '${library.name}' version", e)
         }
 
-        throw RuntimeException("Could not fetch library version for '${library.name}'")
+        throw RuntimeException("Could not fetch library version for '${library.name}' Minecraft $gameVersion")
     }
 
     private fun readImplementationVersion(path: Path): String? {
