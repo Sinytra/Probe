@@ -22,7 +22,6 @@ data class TransformationResult(
     val modid: String?
 )
 
-@OptIn(ExperimentalPathApi::class)
 class TransformationService(
     private val storagePath: Path,
     private val platforms: GlobalPlatformService,
@@ -30,40 +29,66 @@ class TransformationService(
 ) {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(TransformationService::class.java)
+        private const val MAX_RESOLVE_ATTEMPTS = 3
     }
 
-    suspend fun runTransformation(project: ResolvedProject, gameVersion: String): TransformationResult {
-        val mainFile = project.version
-        val otherFiles = project.flattenDependencies()
+    private class AcquiredProject(
+        val project: ResolvedProject,
+        val dependencies: List<ProjectResolvedVersion>,
+        val sources: List<Path>,
+        val libraries: List<Path>
+    ) {
+        val projectDir: Path = sources.first().parent
+        val directories: Set<Path> = (sources + libraries).map { it.parent }.toSet()
+    }
 
-        val allFiles = (listOf(mainFile) + otherFiles).map { it.getFilePath(storagePath) }
+    private val fileTracker = ProjectFileTracker()
 
-        val gameFiles = setup.getGameFiles(gameVersion)
-        val classPath = gameFiles.loaderFiles.toMutableList() + resolveMandatedLibraries(gameVersion)
-        val workDir = project.version.getFilePath(storagePath).parent / "output"
+    suspend fun runTransformation(project: PlatformProject, gameVersion: String): TransformationResult? {
+        val acquired = resolveAndAcquire(project, gameVersion) ?: return null
+        val mainFile = acquired.project.version
 
-        if (workDir.exists()) {
-            workDir.deleteRecursively()
+        try {
+            val gameFiles = setup.getGameFiles(gameVersion)
+            val classPath = gameFiles.loaderFiles + acquired.libraries
+            val workDir = createTempDirectory(acquired.projectDir, "output-$gameVersion-")
+
+            val result = try {
+                runTransformer(workDir, acquired.sources, gameFiles.cleanFile, classPath, gameVersion)
+            } catch (e: Exception) {
+                LOGGER.error("Error transforming project ${mainFile.projectId} version ${mainFile.versionId}", e)
+                null
+            }
+
+            return TransformationResult(
+                mainFile.projectId,
+                mainFile.versionId,
+                acquired.dependencies.map(ProjectResolvedVersion::projectId),
+                result?.success ?: false,
+                result?.primaryModid
+            )
+        } finally {
+            fileTracker.release(acquired.directories, delete = setOf(acquired.projectDir))
         }
-        workDir.createDirectories()
+    }
 
-        val result = try {
-            runTransformer(workDir, allFiles, gameFiles.cleanFile, classPath, gameVersion)
-        } catch (e: Exception) {
-            LOGGER.error("Error transforming project ${mainFile.projectId} version ${mainFile.versionId}", e)
-            null
+    private suspend fun resolveAndAcquire(project: PlatformProject, gameVersion: String): AcquiredProject? {
+        repeat(MAX_RESOLVE_ATTEMPTS) {
+            val resolved = platforms.resolveProject(project, gameVersion) ?: return null
+            val dependencies = resolved.flattenDependencies()
+            val sources = (listOf(resolved.version) + dependencies).map { it.getFilePath(storagePath) }
+            val acquired = AcquiredProject(resolved, dependencies, sources, resolveMandatedLibraries(gameVersion))
+
+            fileTracker.acquire(acquired.directories)
+            if ((acquired.sources + acquired.libraries).all { it.exists() }) {
+                return acquired
+            }
+            fileTracker.release(acquired.directories)
+
+            LOGGER.warn("Files for project {} were removed during resolution, retrying", project.id)
         }
 
-        // Cleanup files
-        workDir.parent.deleteRecursively()
-
-        return TransformationResult(
-            project.version.projectId,
-            project.version.versionId,
-            otherFiles.map(ProjectResolvedVersion::projectId),
-            result?.success ?: false,
-            result?.primaryModid
-        )
+        throw IllegalStateException("Failed to resolve files for project ${project.id} after $MAX_RESOLVE_ATTEMPTS attempts")
     }
 
     private suspend fun resolveMandatedLibraries(gameVersion: String): List<Path> {

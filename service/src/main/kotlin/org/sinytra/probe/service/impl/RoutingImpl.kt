@@ -111,8 +111,7 @@ class RoutingImpl(
         if (existing != null) {
             return existing
         }
-        val resolved = platforms.resolveProject(project, testEnvironment.gameVersion) ?: return null
-        return asyncTransform.transform(project, resolved, testEnvironment)
+        return asyncTransform.transform(project, testEnvironment)
     }
 
     suspend fun importTestReport(body: TestReport) = coroutineScope {

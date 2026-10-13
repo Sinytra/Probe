@@ -14,8 +14,10 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.resources.*
 import io.ktor.serialization.kotlinx.json.*
-import io.ktor.util.cio.*
 import io.ktor.utils.io.*
+import io.ktor.utils.io.jvm.javaio.copyTo
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -23,6 +25,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNamingStrategy
 import org.sinytra.probe.base.db.ProjectPlatform
 import java.nio.file.Path
+import kotlin.io.path.outputStream
 
 private const val MR_API_HOST: String = "api.modrinth.com"
 private const val API_V3: String = "v3"
@@ -176,6 +179,8 @@ object ModrinthAPI {
         }
 
         val channel: ByteReadChannel = response.body()
-        channel.copyAndClose(dest.toFile().writeChannel())
+        withContext(Dispatchers.IO) {
+            dest.outputStream().use { channel.copyTo(it) }
+        }
     }
 }

@@ -7,7 +7,7 @@ import dev.kord.core.event.interaction.GuildMessageCommandInteractionCreateEvent
 
 private data class ModTestArgs(val platform: String, val slug: String)
 
-class CheckCompatMessageCommand(gameVersion: String) : CheckCompatCommandBase(gameVersion) {
+class CheckCompatMessageCommand(private val gameVersion: String) : CheckCompatCommandBase() {
     companion object {
         private val MODRINTH_PATTERN = Regex("https://modrinth\\.com/mod/(.+)")
 
@@ -31,7 +31,7 @@ class CheckCompatMessageCommand(gameVersion: String) : CheckCompatCommandBase(ga
             val response = if (ephemeral) interaction.deferEphemeralResponse()
             else interaction.deferPublicResponse()
 
-            checkCompat(response, args.platform, args.slug)
+            checkCompat(response, args.platform, args.slug, gameVersion)
         } else {
             interaction.respondEphemeral {
                 content = "Invalid message"

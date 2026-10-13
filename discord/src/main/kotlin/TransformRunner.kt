@@ -5,6 +5,7 @@ import io.ktor.client.call.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
+import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.Serializable
@@ -24,11 +25,13 @@ data class ResponseBaseData(
 
 class ProjectNotFoundException(message: String) : Exception(message)
 
+class InvalidRequestException(message: String) : Exception(message)
+
 object TransformRunner {
-    suspend fun runTransformation(platform: String, slug: String, gameVersion: String): TestResponseBody {
+    private val client by lazy {
         val endpoint = System.getenv("CORE_API_URL") ?: "localhost:8080"
 
-        val client = HttpClient {
+        HttpClient {
             install(ContentNegotiation) {
                 json(Json {
                     ignoreUnknownKeys = true
@@ -42,7 +45,19 @@ object TransformRunner {
                 }
             }
         }
+    }
 
+    suspend fun getGameVersions(): List<String> {
+        val resp = client.get("/api/v1/versions")
+
+        if (!resp.status.isSuccess()) {
+            throw RuntimeException("Failed to fetch supported game versions: ${resp.status}")
+        }
+
+        return resp.body<List<String>>()
+    }
+
+    suspend fun runTransformation(platform: String, slug: String, gameVersion: String): TestResponseBody {
         val parsedPlatform = ProjectPlatform.valueOf(platform.uppercase())
         val resp = client.post("/api/v1/probe") {
             contentType(ContentType.Application.Json)
@@ -55,6 +70,10 @@ object TransformRunner {
 
         if (resp.status == HttpStatusCode.NotFound) {
             throw ProjectNotFoundException("Project not found")
+        }
+
+        if (resp.status == HttpStatusCode.BadRequest) {
+            throw InvalidRequestException(resp.bodyAsText().ifBlank { "Invalid request" })
         }
 
         val base = resp.body<ResponseBaseData>()

@@ -12,15 +12,38 @@ import kotlin.io.path.*
 
 data class GameFiles(val cleanFile: Path, val loaderFiles: List<Path>)
 
+val GAME_VERSION_COMPARATOR: Comparator<String> = Comparator { a, b ->
+    val aParts = a.split('.')
+    val bParts = b.split('.')
+
+    for (i in 0 until maxOf(aParts.size, bParts.size)) {
+        val x = aParts.getOrNull(i) ?: return@Comparator -1
+        val y = bParts.getOrNull(i) ?: return@Comparator 1
+        
+        val xNum = x.toIntOrNull()
+        val yNum = y.toIntOrNull()
+        
+        val cmp = if (xNum != null && yNum != null) xNum.compareTo(yNum) else x.compareTo(y)
+        if (cmp != 0) return@Comparator cmp
+    }
+    0
+}
+
 class SetupService(
     private val baseDir: Path,
     private val useLocalCache: Boolean,
     private val nfrtVersion: String,
-    val gameVersions: List<String>,
+    gameVersions: List<String>,
     cache: CacheService
 ) {
     companion object {
         private val LOGGER: Logger = LoggerFactory.getLogger(SetupService::class.java)
+    }
+
+    val gameVersions: List<String> = gameVersions.distinct().sortedWith(GAME_VERSION_COMPARATOR.reversed())
+
+    init {
+        require(this.gameVersions.isNotEmpty()) { "At least one game version is required" }
     }
 
     private var downloader = DownloaderService(baseDir, cache)

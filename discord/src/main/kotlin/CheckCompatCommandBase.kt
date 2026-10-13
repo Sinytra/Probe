@@ -4,7 +4,6 @@ import dev.kord.common.Color
 import dev.kord.core.behavior.interaction.response.DeferredMessageInteractionResponseBehavior
 import dev.kord.core.behavior.interaction.response.respond
 import dev.kord.rest.builder.message.embed
-import kotlinx.datetime.format.FormatStringsInDatetimeFormats
 import kotlinx.datetime.toJavaLocalDateTime
 import org.sinytra.probe.base.ResultType
 import org.sinytra.probe.base.TestResponseBody
@@ -12,8 +11,7 @@ import org.slf4j.LoggerFactory
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
-@OptIn(FormatStringsInDatetimeFormats::class)
-abstract class CheckCompatCommandBase(private val gameVersion: String) {
+abstract class CheckCompatCommandBase {
     companion object {
         private val LOGGER = LoggerFactory.getLogger(CheckCompatCommandBase::class.java)
         
@@ -21,7 +19,7 @@ abstract class CheckCompatCommandBase(private val gameVersion: String) {
         private val CONNECTOR_PROJECTS = setOf("connector", "u58R1TMW")
     }
 
-    suspend fun checkCompat(response: DeferredMessageInteractionResponseBehavior, platform: String, slug: String) {
+    suspend fun checkCompat(response: DeferredMessageInteractionResponseBehavior, platform: String, slug: String, gameVersion: String) {
         if (slug in REPLACED_PROJECTS) {
             response.respond { 
                 content = "When using Connector, please install the [Forgified Fabric API](https://modrinth.com/mod/forgified-fabric-api) instead."
@@ -41,6 +39,11 @@ abstract class CheckCompatCommandBase(private val gameVersion: String) {
         } catch (e: ProjectNotFoundException) {
             response.respond {
                 content = ":warning: Project `${slug}` not found!"
+            }
+            return
+        } catch (e: InvalidRequestException) {
+            response.respond {
+                content = ":warning: ${e.message}"
             }
             return
         } catch (e: Exception) {

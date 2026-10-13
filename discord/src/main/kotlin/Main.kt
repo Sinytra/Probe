@@ -8,9 +8,14 @@ import dev.kord.core.behavior.interaction.respondEphemeral
 import dev.kord.core.event.interaction.GuildChatInputCommandInteractionCreateEvent
 import dev.kord.core.event.interaction.GuildMessageCommandInteractionCreateEvent
 import dev.kord.core.on
+import org.slf4j.LoggerFactory
 import kotlin.io.path.Path
 import kotlin.io.path.bufferedReader
 import kotlin.io.path.exists
+
+private val LOGGER = LoggerFactory.getLogger("Main")
+
+private const val MAX_COMMAND_CHOICES = 25
 
 suspend fun main() {
     val token = System.getenv("BOT_TOKEN")
@@ -18,14 +23,18 @@ suspend fun main() {
 
     val config = readConfig()
     val allowedChannels = config.getLongList("allowedChannels").map(::Snowflake)
-    val gameVersion = config.getString("gameVersion")
+
+    val gameVersions = TransformRunner.getGameVersions()
+        .take(MAX_COMMAND_CHOICES)
+        .ifEmpty { throw RuntimeException("Service reported no supported game versions") }
+    LOGGER.info("Supported game versions: {}", gameVersions)
 
     val kord = Kord(token)
 
-    val checkChatCmd = CheckCompatChatCommand(gameVersion)
+    val checkChatCmd = CheckCompatChatCommand(gameVersions)
     val checkChatCmdRegistered = checkChatCmd.register(kord)
 
-    val checkMsgCmd = CheckCompatMessageCommand(gameVersion)
+    val checkMsgCmd = CheckCompatMessageCommand(gameVersions.first())
     val checkMsgCmdRegistered = checkMsgCmd.register(kord)
 
     kord.on<GuildChatInputCommandInteractionCreateEvent> {
@@ -43,6 +52,7 @@ suspend fun main() {
                 }
 
             }
+            return@on
         }
 
         if (interaction.invokedCommandId == checkChatCmdRegistered.id) {

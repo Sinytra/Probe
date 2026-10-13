@@ -13,6 +13,7 @@ import org.sinytra.probe.core.platform.ModrinthAPI.ModrinthVersionDependency
 import org.sinytra.probe.core.service.CacheService
 import org.slf4j.LoggerFactory
 import java.nio.file.Path
+import java.nio.file.StandardCopyOption
 import kotlin.io.path.*
 
 private const val REQUIRED_DEP: String = "required"
@@ -51,7 +52,7 @@ class ModrinthPlatform(
     private fun projectSlugToIdKey(slug: String): String = "modrinth:slug:$slug"
     private fun projectKey(id: String): String = "modrinth:project:$id"
     private fun versionKey(id: String): String = "modrinth:version:$id"
-    private fun neoForgeKey(id: String): String = "modrinth:project:$id:neoforge"
+    private fun neoForgeKey(id: String, gameVersion: String): String = "modrinth:project:$id:game:$gameVersion:neoforge"
     private fun projectGameVersionKey(id: String, gameVersion: String): String = "modrinth:project:$id:game:$gameVersion"
 
     override suspend fun getProject(slug: String): PlatformProject? {
@@ -105,7 +106,7 @@ class ModrinthPlatform(
     }
 
     override suspend fun isNeoForgeAvailable(project: PlatformProject, gameVersion: String): Boolean {
-        val key = neoForgeKey(project.id)
+        val key = neoForgeKey(project.id, gameVersion)
 
         val data = cache.get(key)?.toBoolean() ?: coroutineScope {
             val available = ModrinthAPI.getCandidateVersion(
@@ -174,10 +175,15 @@ class ModrinthPlatform(
             return ModrinthResolvedVersion(version.projectId, version.id, version.versionNumber, relativePath, dependencies)
         }
 
-        filePath.deleteIfExists()
         filePath.createParentDirectories()
 
-        ModrinthAPI.downloadFile(file.url, filePath)
+        val tempFile = createTempFile(filePath.parent, filePath.fileName.toString(), ".part")
+        try {
+            ModrinthAPI.downloadFile(file.url, tempFile)
+            tempFile.moveTo(filePath, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+        } finally {
+            tempFile.deleteIfExists()
+        }
 
         return ModrinthResolvedVersion(version.projectId, version.id, version.versionNumber, relativePath, dependencies)
     }
