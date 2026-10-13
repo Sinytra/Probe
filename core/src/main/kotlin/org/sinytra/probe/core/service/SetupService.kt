@@ -78,6 +78,7 @@ class SetupService(
             "java", "-jar", nfrt.path.absolutePathString(),
             "run", "--neoforge", neoMavenCoords, "--dist", "joined",
             "--write-result=gameJar:${compiledArtifact.fileName}",
+            "--write-result=vanillaDeobfuscated:${cleanArtifact.fileName}",
             "--work-dir", workDir.absolutePathString()
         )
 
