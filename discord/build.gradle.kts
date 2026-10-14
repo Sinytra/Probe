@@ -10,6 +10,17 @@ val dockerImage = "sinytra/probe/discord"
 
 repositories {
     mavenCentral()
+    // TODO Remove after stable Kord includes https://github.com/kordlib/kord/pull/1072
+    maven {
+        name = "MavenCentral Snapshots"
+        url = uri("https://central.sonatype.com/repository/maven-snapshots/")
+        content {
+            includeGroup("dev.kord")
+        }
+        mavenContent {
+            snapshotsOnly()
+        }
+    }
 }
 
 dependencies {
