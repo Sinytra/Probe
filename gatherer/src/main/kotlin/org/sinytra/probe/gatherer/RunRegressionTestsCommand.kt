@@ -46,9 +46,17 @@ class RunRegressionTestsCommand : Callable<Int> {
         val params = commonOptions!!.setupParams()
         val gatherer = createTestRunner(params)
 
-        LOGGER.info("Running regression tests on {} mods", candidates.size)
+        val previousGameVersion = oldResults.environment.gameVersion
+        val testCandidates = if (previousGameVersion != params.gameVersion) {
+            LOGGER.info("Previous results were tested on {}, resolving project versions for {}", previousGameVersion, params.gameVersion)
+            gatherer.resolveCurrentVersions(candidates)
+        } else {
+            candidates
+        }
 
-        gatherer.run(candidates)
+        LOGGER.info("Running regression tests on {} mods", testCandidates.size)
+
+        gatherer.run(testCandidates)
 
         return 0
     }

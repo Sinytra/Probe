@@ -7,6 +7,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.sinytra.probe.base.ProjectSearchResult
 import org.sinytra.probe.core.service.CleanupService
@@ -27,6 +28,12 @@ import java.util.*
 import kotlin.io.path.*
 import kotlin.time.measureTime
 import kotlin.time.measureTimedValue
+
+@Serializable
+private data class CandidatesCache(
+    val gameVersion: String,
+    val candidates: List<ProjectSearchResult>
+)
 
 class ModTestRunner(
     private val workingDir: Path,
@@ -87,6 +94,23 @@ class ModTestRunner(
                 candidates.map { CleanupService.ProjectCoordinates(it.id, it.slug, it.versionId) } + flatDeps,
                 listOf("output", "$FFAPI_SLUG-$FFAPI_ID")
             )
+        }
+    }
+
+    fun resolveCurrentVersions(candidates: List<ProjectSearchResult>): List<ProjectSearchResult> {
+        val dispatcher = Dispatchers.IO.limitedParallelism(concurrentDownloads)
+
+        return runBlocking {
+            candidates.map { candidate ->
+                async(dispatcher) {
+                    val version = modrinth.resolveProjectVersion(candidate.id, gameVersion, LOADER_FABRIC)
+                    if (version == null) {
+                        LOGGER.warn("{} Skipping {}: no Fabric version available for {}", ICON_WARN, candidate.slug, gameVersion)
+                        return@async null
+                    }
+                    candidate.copy(versionId = version.versionId)
+                }
+            }.awaitAll().filterNotNull()
         }
     }
 
@@ -283,7 +307,7 @@ class ModTestRunner(
             .sortedWith { a, b -> exclusiveKeys.indexOf(a.id) - exclusiveKeys.indexOf(b.id) }
             .take(count)
 
-        val json = Json.encodeToString(projectList)
+        val json = Json.encodeToString(CandidatesCache(gameVersion, projectList))
         output.writeText(json)
 
         return projectList
@@ -334,10 +358,18 @@ class ModTestRunner(
         return file.takeIf { it.exists() }?.readText()
             ?.let { 
                 try {
-                    Json.decodeFromString<List<ProjectSearchResult>>(it)
+                    Json.decodeFromString<CandidatesCache>(it)
                 } catch (e: Exception) {
                     LOGGER.error("Error while parsing candidates file, discarding", e)
                     null
+                }
+            }
+            ?.let {
+                if (it.gameVersion != gameVersion) {
+                    LOGGER.info("{} Discarding candidate cache for game version {}, expected {}", ICON_TRASH, it.gameVersion, gameVersion)
+                    null
+                } else {
+                    it.candidates
                 }
             }
             ?.let {

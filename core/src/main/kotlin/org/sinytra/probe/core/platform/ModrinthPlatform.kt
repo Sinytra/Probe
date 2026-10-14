@@ -53,7 +53,8 @@ class ModrinthPlatform(
     private fun projectKey(id: String): String = "modrinth:project:$id"
     private fun versionKey(id: String): String = "modrinth:version:$id"
     private fun neoForgeKey(id: String, gameVersion: String): String = "modrinth:project:$id:game:$gameVersion:neoforge"
-    private fun projectGameVersionKey(id: String, gameVersion: String): String = "modrinth:project:$id:game:$gameVersion"
+    private fun resolvedVersionKey(id: String, gameVersions: List<String>, loaders: List<String>): String =
+        "modrinth:project:$id:game:${gameVersions.joinToString(",")}:loader:${loaders.joinToString(",")}"
 
     override suspend fun getProject(slug: String): PlatformProject? {
         // In case someone passes in an ID
@@ -126,17 +127,17 @@ class ModrinthPlatform(
     override suspend fun resolveProject(project: PlatformProject, gameVersion: String): ResolvedProject? {
         project as ModrinthProject
 
-        return resolveProjectInternal(project.id, gameVersion, listOf(gameVersion), false)
+        return resolveProjectInternal(project.id, listOf(gameVersion), false)
     }
 
     suspend fun resolveProject(project: PlatformProject, gameVersions: List<String>, fallbackLoader: Boolean): ResolvedProject? {
         project as ModrinthProject
 
-        return resolveProjectInternal(project.id, gameVersions.first(), gameVersions, fallbackLoader)
+        return resolveProjectInternal(project.id, gameVersions, fallbackLoader)
     }
 
     override suspend fun resolveProjectVersion(slug: String, gameVersion: String, loader: String): ProjectResolvedVersion? =
-        getOrComputeVersion(slug, gameVersion, listOf(gameVersion), loader, false)
+        getOrComputeVersion(slug, listOf(gameVersion), loader, false)
 
     suspend fun searchProjects(limit: Int, offset: Int, gameVersion: String, loader: String, excludeLoader: String?): List<ProjectSearchResult>? =
         ModrinthAPI.searchProjects(limit, offset, gameVersion, loader, excludeLoader)
@@ -188,14 +189,14 @@ class ModrinthPlatform(
         return ModrinthResolvedVersion(version.projectId, version.id, version.versionNumber, relativePath, dependencies)
     }
 
-    private suspend fun resolveProjectInternal(project: String, gameVersion: String, allowedVersions: List<String>, fallbackLoader: Boolean): ResolvedProject? {
-        val ver = getOrComputeVersion(project, gameVersion, allowedVersions, LOADER_FABRIC, fallbackLoader) ?: return null
+    private suspend fun resolveProjectInternal(project: String, allowedVersions: List<String>, fallbackLoader: Boolean): ResolvedProject? {
+        val ver = getOrComputeVersion(project, allowedVersions, LOADER_FABRIC, fallbackLoader) ?: return null
 
         val deps: List<ResolvedProject> = channelFlow {
             ver.dependencies.forEach { dep ->
                 launch {
                     send(
-                        resolveProjectInternal(dep, gameVersion, allowedVersions, true)
+                        resolveProjectInternal(dep, allowedVersions, true)
                             ?: throw RuntimeException("Failed to resolve dependent project $dep")
                     )
                 }
@@ -205,12 +206,13 @@ class ModrinthPlatform(
         return ResolvedProject(ver, deps)
     }
 
-    private suspend fun getOrComputeVersion(projectId: String, gameVersion: String, allowedVersions: List<String>, loader: String, fallbackLoader: Boolean): ModrinthResolvedVersion? {
+    private suspend fun getOrComputeVersion(projectId: String, allowedVersions: List<String>, loader: String, fallbackLoader: Boolean): ModrinthResolvedVersion? {
         if (projectId.length != 8) {
             throw IllegalArgumentException("Invalid Project ID: $projectId")
         }
 
-        val key = projectGameVersionKey(projectId, gameVersion)
+        val loaders = if (fallbackLoader) listOf(LOADER_NEOFORGE, loader).distinct() else listOf(loader)
+        val key = resolvedVersionKey(projectId, allowedVersions, loaders)
 
         return cache.getObject<ModrinthResolvedVersion>(key)
             ?.let {
@@ -218,15 +220,14 @@ class ModrinthPlatform(
                 val path = storagePath / it.path
                 if (!path.exists()) {
                     cache.del(key)
-                    return getOrComputeVersion(projectId, gameVersion, allowedVersions, loader, fallbackLoader)
+                    return getOrComputeVersion(projectId, allowedVersions, loader, fallbackLoader)
                 }
                 it
             }
             ?: coroutineScope {
                 LOGGER.info("Fetching version for project $projectId")
 
-                val ver = ModrinthAPI.getCandidateVersion(projectId, allowedVersions, if (fallbackLoader) LOADER_NEOFORGE else loader)
-                    ?: (if (fallbackLoader && loader != LOADER_NEOFORGE) ModrinthAPI.getCandidateVersion(projectId, allowedVersions, loader) else null)
+                val ver = loaders.firstNotNullOfOrNull { ModrinthAPI.getCandidateVersion(projectId, allowedVersions, it) }
                     ?: return@coroutineScope null
 
                 val res = downloadVersionFile(ver)
