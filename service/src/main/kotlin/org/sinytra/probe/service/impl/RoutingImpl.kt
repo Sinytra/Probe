@@ -15,11 +15,13 @@ import org.sinytra.probe.core.platform.GlobalPlatformService
 import org.sinytra.probe.core.platform.ModrinthPlatform.Companion.LOADER_FABRIC
 import org.sinytra.probe.core.platform.ModrinthPlatform.Companion.LOADER_NEOFORGE
 import org.sinytra.probe.core.platform.PlatformProject
+import org.sinytra.probe.core.platform.ProjectVersion
 import org.sinytra.probe.core.service.AsyncTransformationRunner
 import org.sinytra.probe.core.service.PersistenceService
 import org.sinytra.probe.core.service.SetupService
 import org.sinytra.probe.core.service.StatsService
 import org.slf4j.LoggerFactory
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
@@ -85,13 +87,14 @@ class RoutingImpl(
                 )
 
             val version = platforms.getVersion(project, result.versionId)
+            val passing = result.passing && areDependenciesCompatible(project.platform, version, testEnvironment, ConcurrentHashMap.newKeySet<String>().apply { add(project.id) })
             val envDto = TestEnvironmentDTO(testEnvironment.connectorVersion, testEnvironment.gameVersion, testEnvironment.neoForgeVersion)
 
             val response = TestResponseBody.Tested(
                 result.modid,
                 version?.versionNumber,
                 version?.versionId,
-                result.passing,
+                passing,
 
                 envDto,
                 result.createdAt,
@@ -112,6 +115,25 @@ class RoutingImpl(
             return existing
         }
         return asyncTransform.transform(project, testEnvironment)
+    }
+
+    private suspend fun areDependenciesCompatible(platform: ProjectPlatform, version: ProjectVersion?, testEnvironment: TestEnvironment, visited: MutableSet<String>): Boolean = coroutineScope {
+        val dependencies = version?.dependencies?.filter(visited::add) ?: return@coroutineScope true
+
+        dependencies
+            .map { async { isDependencyCompatible(platform, it, testEnvironment, visited) } }
+            .awaitAll()
+            .all { it }
+    }
+
+    private suspend fun isDependencyCompatible(platform: ProjectPlatform, projectId: String, testEnvironment: TestEnvironment, visited: MutableSet<String>): Boolean {
+        val project = platforms.getProject(platform, projectId) ?: return false
+        if (platforms.isNeoForgeAvailable(project, testEnvironment.gameVersion)) {
+            return true
+        }
+
+        val result = getOrRunTest(project, testEnvironment) ?: return false
+        return result.passing && areDependenciesCompatible(platform, platforms.getVersion(project, result.versionId), testEnvironment, visited)
     }
 
     suspend fun importTestReport(body: TestReport) = coroutineScope {
