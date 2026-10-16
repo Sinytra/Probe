@@ -12,13 +12,13 @@ class CheckCompatChatCommand(private val gameVersions: List<String>) : CheckComp
             "test",
             "Test mod compatibility"
         ) {
-            string("platform", "Project platform") {
-                choice("Modrinth", "modrinth")
-
-                required = true
-            }
             string("slug", "Project slug") {
                 required = true
+            }
+            string("platform", "Project platform (default: Modrinth)") {
+                choice("Modrinth", "modrinth")
+
+                required = false
             }
             string("game_version", "Game version (default: ${gameVersions.first()})") {
                 gameVersions.forEach { choice(it, it) }
@@ -30,7 +30,7 @@ class CheckCompatChatCommand(private val gameVersions: List<String>) : CheckComp
     suspend fun GuildChatInputCommandInteractionCreateEvent.handle() {
         val response = interaction.deferPublicResponse()
 
-        val platform = interaction.command.strings["platform"]!!
+        val platform = interaction.command.strings["platform"] ?: "modrinth"
         val slug = interaction.command.strings["slug"]!!
         val gameVersion = interaction.command.strings["game_version"] ?: gameVersions.first()
 
